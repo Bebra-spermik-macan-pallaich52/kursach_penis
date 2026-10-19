@@ -1,0 +1,16 @@
+digraph G {
+ graph[rankdir=TB,bgcolor="white",pad=.25,nodesep=.5,ranksep=.55];
+ node[shape=box,style="rounded,filled",fillcolor="#f1f5fa",fontname="DejaVu Sans",fontsize=14,margin=.2];
+ edge[fontname="DejaVu Sans",fontsize=11];
+ client[label="Swagger / ReDoc / requests-клиент"];
+ api[label="FastAPI: /api/v1 и /api/v2\nauth, users, olympiads, participations, protocols, attachments"];
+ schemas[label="Pydantic-схемы\nформат и ограничения входных данных"];
+ services[label="Общие проверки\nроль, ответственный, статус, сохранение"];
+ orm[label="SQLAlchemy: модели и сессия"];
+ db[label="PostgreSQL\nпользователи, олимпиады, заявки, метаданные файлов"];
+ files[label="storage/\nфайлы документов"];
+ reports[label="python-docx / openpyxl\nWord и Excel в памяти"];
+ client -> api[label="HTTP / JSON / Bearer JWT"];
+ api -> schemas; api -> services;services -> orm;orm -> db;
+ api -> files;api -> reports;
+}

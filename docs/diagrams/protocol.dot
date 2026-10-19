@@ -1,0 +1,9 @@
+digraph G {
+ graph[rankdir=LR,bgcolor="white",pad=.2];node[shape=box,style="rounded,filled",fillcolor="#eef3fa",fontname="DejaVu Sans",fontsize=15];edge[fontname="DejaVu Sans",fontsize=12];
+ draft[label="draft\nФормируется\nБаллы и заявки изменяемы"];
+ prepared[label="prepared\nПодготовлен\nПравки заблокированы"];
+ published[label="published\nОпубликован\nВиден гостям"];
+ draft->prepared[label="Ответственный / администратор\nВсе результаты заполнены; дата наступила"];
+ prepared->draft[label="Отзыв ответственным / администратором"];
+ prepared->published[label="Только администратор"];
+}

@@ -1,0 +1,14 @@
+digraph G {
+ graph [rankdir=LR, bgcolor="white", pad=0.2, nodesep=0.55, ranksep=0.9];
+ node [shape=plain,fontname="DejaVu Sans",fontsize=13];
+ edge [fontname="DejaVu Sans",fontsize=11];
+ users [label=<<table border="1" cellborder="0" cellspacing="0" cellpadding="7"><tr><td bgcolor="#dce9f5"><b>users</b></td></tr><tr><td align="left">PK id</td></tr><tr><td align="left">UQ username, email</td></tr><tr><td align="left">password_hash, full_name</td></tr><tr><td align="left">birth_date, institution</td></tr><tr><td align="left">education_level, course</td></tr><tr><td align="left">specialty, role, is_active</td></tr><tr><td align="left">token_version, FK created_by</td></tr></table>>];
+ olympiads [label=<<table border="1" cellborder="0" cellspacing="0" cellpadding="7"><tr><td bgcolor="#dce9f5"><b>olympiads</b></td></tr><tr><td align="left">PK id</td></tr><tr><td align="left">title, description</td></tr><tr><td align="left">FK teacher_id</td></tr><tr><td align="left">start_date, end_date</td></tr><tr><td align="left">protocol_status</td></tr></table>>];
+ participations [label=<<table border="1" cellborder="0" cellspacing="0" cellpadding="7"><tr><td bgcolor="#dce9f5"><b>participations</b></td></tr><tr><td align="left">PK id</td></tr><tr><td align="left">FK olympiad_id</td></tr><tr><td align="left">FK student_id</td></tr><tr><td align="left">score, result</td></tr><tr><td align="left">UQ (olympiad_id, student_id)</td></tr></table>>];
+ attachments [label=<<table border="1" cellborder="0" cellspacing="0" cellpadding="7"><tr><td bgcolor="#dce9f5"><b>attachments</b></td></tr><tr><td align="left">PK id</td></tr><tr><td align="left">FK olympiad_id</td></tr><tr><td align="left">kind, title</td></tr><tr><td align="left">original_name, stored_name</td></tr></table>>];
+ users -> olympiads [label="1 : M (ответственный)"];
+ users -> participations [label="1 : M (студент)"];
+ olympiads -> participations [label="1 : M"];
+ olympiads -> attachments [label="1 : M"];
+ users -> users [label="создатель 1 : M"];
+}

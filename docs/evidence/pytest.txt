@@ -1,0 +1,47 @@
+........................................................................ [ 96%]
+...                                                                      [100%]
+----- generated xml file: /workspace/kursach_penis/docs/evidence/junit.xml -----
+================================ tests coverage ================================
+_______________ coverage: platform linux, python 3.12.14-final-0 _______________
+
+Name                             Stmts   Miss  Cover   Missing
+--------------------------------------------------------------
+app/__init__.py                      0      0   100%
+app/api/__init__.py                  0      0   100%
+app/api/attachments.py             128      3    98%   71-73
+app/api/auth.py                     39      0   100%
+app/api/olympiads.py                68      0   100%
+app/api/participations.py           66      0   100%
+app/api/protocols.py                68      0   100%
+app/api/users.py                    40      0   100%
+app/config.py                       10      0   100%
+app/database.py                     12      3    75%   11, 18-19
+app/init_db.py                      85     85     0%   2-110
+app/main.py                         47      1    98%   25
+app/models/__init__.py               0      0   100%
+app/models/attachment.py            10      0   100%
+app/models/olympiad.py              12      0   100%
+app/models/participation.py         10      0   100%
+app/models/user.py                  18      0   100%
+app/reports.py                      42      0   100%
+app/schemas/__init__.py              0      0   100%
+app/schemas/account_update.py        5      0   100%
+app/schemas/api_model.py             4      0   100%
+app/schemas/attachment_read.py       7      0   100%
+app/schemas/olympiad_create.py      14      0   100%
+app/schemas/olympiad_page.py         7      0   100%
+app/schemas/olympiad_read.py        10      0   100%
+app/schemas/olympiad_update.py      14      0   100%
+app/schemas/password_change.py       5      0   100%
+app/schemas/profile_update.py       19      0   100%
+app/schemas/protocol_update.py       4      0   100%
+app/schemas/result_update.py         7      0   100%
+app/schemas/user_create.py          22      0   100%
+app/schemas/user_read.py            14      0   100%
+app/security.py                     46      0   100%
+app/services.py                     28      0   100%
+--------------------------------------------------------------
+TOTAL                              861     92    89%
+Coverage HTML written to dir docs/evidence/coverage
+Coverage JSON written to file docs/evidence/coverage.json
+75 passed in 3.01s

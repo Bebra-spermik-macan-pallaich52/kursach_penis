@@ -1,0 +1,177 @@
+[
+  {
+    "id": "TC01",
+    "requirements": "R04",
+    "test": "test_login_profile_logout",
+    "action": "Верный логин, просмотр профиля, выход",
+    "expected": "200; профиль без хеша; прежний токен после выхода — 401"
+  },
+  {
+    "id": "TC02",
+    "requirements": "R04",
+    "test": "test_bad_login; test_inactive_login",
+    "action": "Неверный логин/пароль, заблокированный аккаунт",
+    "expected": "401 без выдачи токена"
+  },
+  {
+    "id": "TC03",
+    "requirements": "R04",
+    "test": "test_invalid_token; test_missing_user_and_expired_token",
+    "action": "Повреждённый, пустой, просроченный JWT, несуществующий sub",
+    "expected": "401"
+  },
+  {
+    "id": "TC04",
+    "requirements": "R04",
+    "test": "test_profile_and_password",
+    "action": "Изменить email и ФИО, попытаться изменить role; сменить пароль",
+    "expected": "200; роль — 422; старый токен — 401"
+  },
+  {
+    "id": "TC05",
+    "requirements": "R07 R13",
+    "test": "test_create_student",
+    "action": "Создать студента администратором, преподавателем, студентом",
+    "expected": "201 / 201 / 403"
+  },
+  {
+    "id": "TC06",
+    "requirements": "R07",
+    "test": "test_create_teacher_and_duplicate",
+    "action": "Создать преподавателя разными ролями; повторить запись",
+    "expected": "403 / 201; повтор — 409"
+  },
+  {
+    "id": "TC07",
+    "requirements": "R13",
+    "test": "test_user_validation",
+    "action": "Неверные email, курс, пароль, логин, дата, отсутствующие данные",
+    "expected": "422 для каждой из девяти комбинаций"
+  },
+  {
+    "id": "TC08",
+    "requirements": "R07",
+    "test": "test_admin_accounts; test_duplicate_profile_email",
+    "action": "Список аккаунтов, блокировка, смена пароля, дубликат email",
+    "expected": "200; отзыв токенов; самоблокировка — 409; конфликт email — 409"
+  },
+  {
+    "id": "TC09",
+    "requirements": "R08",
+    "test": "test_crud",
+    "action": "Создать, получить, PATCH, PUT и удалить пустую олимпиаду",
+    "expected": "201 / 200 / 200 / 200 / 204; затем 404"
+  },
+  {
+    "id": "TC10",
+    "requirements": "R08",
+    "test": "test_crud_forbidden",
+    "action": "Изменять карточку студентом/преподавателем",
+    "expected": "403"
+  },
+  {
+    "id": "TC11",
+    "requirements": "R01 R16",
+    "test": "test_filter_and_versions; test_pagination_validation",
+    "action": "Год, поиск, страницы, проценты в строке поиска, неверные лимиты",
+    "expected": "Отбор точен; разные контракты; некорректные пределы — 422"
+  },
+  {
+    "id": "TC12",
+    "requirements": "R08",
+    "test": "test_invalid_olympiad; test_inactive_teacher",
+    "action": "Неверные даты, NULL, студент/неактивный ответственный",
+    "expected": "422"
+  },
+  {
+    "id": "TC13",
+    "requirements": "R05 R06 R09 R14",
+    "test": "test_complete_workflow",
+    "action": "Запись → результат → подготовка → отзыв → подготовка → публикация",
+    "expected": "До публикации 404/null; после — баллы и winner; правки заблокированы"
+  },
+  {
+    "id": "TC14",
+    "requirements": "R09 R14",
+    "test": "test_ownership",
+    "action": "Чужой преподаватель читает/меняет протокол, баллы, заявки",
+    "expected": "403; в списке /protocols только свои олимпиады"
+  },
+  {
+    "id": "TC15",
+    "requirements": "R05",
+    "test": "test_enrollment_and_deletion",
+    "action": "Повторная заявка, отмена, чужая заявка, прошедшая дата",
+    "expected": "409; своя отмена 204; чужая 403; прошедшая олимпиада 409"
+  },
+  {
+    "id": "TC16",
+    "requirements": "R14",
+    "test": "test_protocol_incomplete_future_and_validation",
+    "action": "Пустой/неполный протокол, будущая дата, отрицательные и дробные баллы",
+    "expected": "409 для состояния; 422 для неверных данных"
+  },
+  {
+    "id": "TC17",
+    "requirements": "R10 R11",
+    "test": "test_complete_workflow; test_draft_export",
+    "action": "Открыть DOCX/XLSX; пустой год, черновой протокол, неизвестный формат",
+    "expected": "Настоящие таблицы; score=95.5; пустой отчёт допустим; формат pdf — 422"
+  },
+  {
+    "id": "TC18",
+    "requirements": "R10",
+    "test": "test_excel_formula_safety",
+    "action": "ФИО начинается со знака формулы Excel",
+    "expected": "Ячейка строковая, формула не исполняется"
+  },
+  {
+    "id": "TC19",
+    "requirements": "R03 R15",
+    "test": "test_upload_download_replace_delete",
+    "action": "Загрузить файл, скачать, заменить, удалить",
+    "expected": "201 / 200 / 200 / 204; затем 404"
+  },
+  {
+    "id": "TC20",
+    "requirements": "R03",
+    "test": "test_past_tasks",
+    "action": "Текущее задание, затем изменить год события на прошлый",
+    "expected": "Текущее скрыто; прошлогоднее доступно"
+  },
+  {
+    "id": "TC21",
+    "requirements": "R12 R15",
+    "test": "test_templates; test_multiple_awards_and_permissions",
+    "action": "Создать четыре вида Word; две грамоты одной олимпиады; чужой преподаватель",
+    "expected": "Каждый шаблон 201; две записи сохранены; чужой доступ 403"
+  },
+  {
+    "id": "TC22",
+    "requirements": "R03",
+    "test": "test_file_validation; test_office_uploads",
+    "action": "Файл 5 МБ+1, неверные сигнатуры/расширения/кодировка, корректные DOCX/XLSX",
+    "expected": "413 / 422; корректные документы — 201"
+  },
+  {
+    "id": "TC23",
+    "requirements": "R03",
+    "test": "test_missing_file; test_no_path_traversal",
+    "action": "Удалить физический файл; передать ../../ в имени",
+    "expected": "404; путь хранения остаётся в каталоге и имеет UUID"
+  },
+  {
+    "id": "TC24",
+    "requirements": "R16",
+    "test": "test_v2_security_and_write; test_documentation_and_security_schema",
+    "action": "CRUD через v2, чужая роль, Swagger и ReDoc обеих версий",
+    "expected": "Права совпадают с v1; схемы и локальные страницы 200"
+  },
+  {
+    "id": "TC25",
+    "requirements": "R17 R18",
+    "test": "test_health_and_static",
+    "action": "Проверить SELECT 1 и локальные CSS",
+    "expected": "200; database=postgresql"
+  }
+]
