@@ -92,7 +92,10 @@ def list_files(olympiad_id: int, db: Session = Depends(get_db)):
     return query.order_by(Attachment.id).all()
 
 
-@router.get("/attachments/{attachment_id}", summary="Скачать общедоступный документ")
+@router.get("/attachments/{attachment_id}", response_class=FileResponse,
+    responses={200: {"content": {"application/octet-stream": {
+        "schema": {"type": "string", "format": "binary"}}}}},
+    summary="Скачать общедоступный документ")
 def download(attachment_id: int, db: Session = Depends(get_db)):
     item = get_attachment(db, attachment_id)
     olympiad = get_olympiad(db, item.olympiad_id)

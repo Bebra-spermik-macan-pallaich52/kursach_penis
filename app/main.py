@@ -6,6 +6,7 @@ from fastapi.staticfiles import StaticFiles
 from sqlalchemy import text
 from app.config import JWT_SECRET, ROOT, STORAGE
 from app.database import engine
+from app.schemas.error_read import ErrorRead
 from app.api import auth, users, olympiads, participations, protocols, attachments
 
 DESCRIPTION = """Учёт участия студентов в олимпиадах и конкурсах профессионального мастерства.
@@ -32,10 +33,13 @@ async def lifespan(app):
 def create_api(version):
     api = FastAPI(title="Олимпиадное движение — " + version, version=version,
                   description=DESCRIPTION, docs_url=None, redoc_url=None,
-                  responses={401: {"description": "Требуется вход"},
-                  403: {"description": "Недостаточно прав"}, 404: {"description": "Не найдено"},
-                  409: {"description": "Конфликт данных или состояния"},
-                  422: {"description": "Ошибка входных данных"}})
+                  responses={code: {"model": ErrorRead, "description": description}
+                      for code, description in {
+                          400: "Неверный текущий пароль",
+                          401: "Требуется вход", 403: "Недостаточно прав",
+                          404: "Не найдено", 409: "Конфликт данных или состояния",
+                          413: "Файл слишком большой", 422: "Ошибка входных данных"
+                      }.items()})
     api.include_router(auth.router)
     api.include_router(users.router)
     if version == "v2":

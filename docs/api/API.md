@@ -180,9 +180,40 @@ with open("annual.xlsx", "wb") as file:
 
 401 — отсутствующий, просроченный или отозванный токен; 403 — недостаточно прав;
 404 — нет записи либо закрыт публичный результат; 409 — дубликат или неверный статус;
-413 — файл больше лимита; 422 — неверный формат данных. Для обычных ошибок тело
+413 — файл больше лимита; 422 — неверный формат данных; 400 — неверный текущий пароль при его смене. Для обычных ошибок тело
 {"detail":"Описание"}; для валидации detail — массив с loc/msg/type.
 Не следует вызывать response.json() у успешного DELETE 204 и бинарного экспорта.
 
-Полные схемы, ограничения, обязательные поля и типы тел приведены в
+Схемы входных данных и основных моделей ответа, ограничения и обязательные поля приведены в
 openapi-v1.json и openapi-v2.json; эти файлы экспортированы из работающего приложения.
+
+
+## Формы ответов
+
+Поля моделей в ответах — camelCase; JSON-запросы также допускают snake_case.
+OAuth2 использует стандартные access_token/token_type. Публичные ответы не
+включают password, passwordHash и tokenVersion.
+
+| Объект ответа | Поля |
+|---|---|
+| Пользователь | id, username, fullName, birthDate, email, institution, educationLevel, course, specialty, role, isActive |
+| Олимпиада | id, title, description, teacherId, startDate, endDate, protocolStatus |
+| Заявка | id, olympiadId, studentId, fullName, score, result |
+| Собственная заявка | Поля заявки плюс title, protocolStatus; score/result=null до публикации |
+| Протокол | olympiadId, title, status, participants — массив заявок с ФИО и результатами |
+| Вложение | id, olympiadId, kind, title, originalName; физический путь и storedName не выдаются |
+| Статус протокола | status: draft / prepared / published |
+| Вход | access_token, token_type: bearer |
+
+Пример опубликованного протокола:
+
+```json
+{"olympiadId":1,"title":"Олимпиада Python","status":"published","participants":[{"id":1,"olympiadId":1,"studentId":52,"fullName":"Иванов Иван Иванович","score":95.5,"result":"winner"}]}
+```
+
+У GET /users, /protocols, /olympiads/{id}/participations и списков вложений
+ответ — массив соответствующих объектов. Экспорт и скачивание возвращают
+двоичный документ; удаление заявки, олимпиады и вложения даёт пустой 204,
+DELETE /auth/session — 200 с message. Для входа и служебных
+ответов приведены явные формы; автоматическая документация
+в OpenAPI теперь содержит явные модели, включая вложенный список участников.

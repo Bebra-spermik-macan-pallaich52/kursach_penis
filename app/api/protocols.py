@@ -1,5 +1,6 @@
 from datetime import date
 from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi.responses import Response
 from sqlalchemy import extract, or_
 from sqlalchemy.orm import Session
 from app.database import get_db
@@ -8,12 +9,18 @@ from app.models.olympiad import Olympiad
 from app.models.participation import Participation
 from app.schemas.protocol_update import ProtocolUpdate
 from app.schemas.olympiad_read import OlympiadRead
+from app.schemas.protocol_read import ProtocolRead
+from app.schemas.status_read import StatusRead
 from app.security import require_admin, require_staff
 from app.services import check_owner, get_olympiad, save
 from app.api.participations import participation_data
 from app.reports import RESULT_NAMES, make_report
 
 router = APIRouter(tags=["Протоколы и отчёты"])
+REPORT_RESPONSE = {200: {"description": "Документ Word или Excel",
+    "content": {media: {"schema": {"type": "string", "format": "binary"}}
+        for media in ("application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")}}}
 
 
 def protocol_rows(db, olympiad_id):
@@ -33,7 +40,7 @@ def list_protocols(user: User = Depends(require_staff), db: Session = Depends(ge
     return query.order_by(Olympiad.id).all()
 
 
-@router.get("/olympiads/{olympiad_id}/protocol", summary="Опубликованный протокол (общедоступный)")
+@router.get("/olympiads/{olympiad_id}/protocol", response_model=ProtocolRead, summary="Опубликованный протокол (общедоступный)")
 def public_protocol(olympiad_id: int, db: Session = Depends(get_db)):
     item = get_olympiad(db, olympiad_id)
     if item.protocol_status != "published":
@@ -41,7 +48,7 @@ def public_protocol(olympiad_id: int, db: Session = Depends(get_db)):
     return protocol_data(db, item)
 
 
-@router.get("/olympiads/{olympiad_id}/protocol-draft", summary="Просмотреть служебный протокол")
+@router.get("/olympiads/{olympiad_id}/protocol-draft", response_model=ProtocolRead, summary="Просмотреть служебный протокол")
 def private_protocol(olympiad_id: int, user: User = Depends(require_staff),
                       db: Session = Depends(get_db)):
     item = get_olympiad(db, olympiad_id)
@@ -49,7 +56,7 @@ def private_protocol(olympiad_id: int, user: User = Depends(require_staff),
     return protocol_data(db, item)
 
 
-@router.patch("/olympiads/{olympiad_id}/protocol", summary="Подготовить, отозвать или опубликовать протокол")
+@router.patch("/olympiads/{olympiad_id}/protocol", response_model=StatusRead, summary="Подготовить, отозвать или опубликовать протокол")
 def set_protocol_status(olympiad_id: int, data: ProtocolUpdate,
                          user: User = Depends(require_staff), db: Session = Depends(get_db)):
     item = get_olympiad(db, olympiad_id, lock=True)
@@ -70,7 +77,7 @@ def set_protocol_status(olympiad_id: int, data: ProtocolUpdate,
     return {"status": item.protocol_status}
 
 
-@router.get("/olympiads/{olympiad_id}/reports/protocol", summary="Скачать протокол Word или Excel")
+@router.get("/olympiads/{olympiad_id}/reports/protocol", response_class=Response, responses=REPORT_RESPONSE, summary="Скачать протокол Word или Excel")
 def export_protocol(olympiad_id: int, file_format: str = Query(default="docx", alias="format"),
                       user: User = Depends(require_staff), db: Session = Depends(get_db)):
     item = get_olympiad(db, olympiad_id)
@@ -83,7 +90,7 @@ def export_protocol(olympiad_id: int, file_format: str = Query(default="docx", a
     return make_report(title, ["№", "ФИО", "Баллы", "Результат"], rows, file_format, f"protocol_{item.id}")
 
 
-@router.get("/reports/annual", summary="Годовой отчёт по опубликованным результатам")
+@router.get("/reports/annual", response_class=Response, responses=REPORT_RESPONSE, summary="Годовой отчёт по опубликованным результатам")
 def annual_report(year: int = Query(ge=2000, le=2100),
                    file_format: str = Query(default="xlsx", alias="format"),
                    user: User = Depends(require_admin), db: Session = Depends(get_db)):

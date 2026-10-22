@@ -1,60 +1,61 @@
 # Словарь данных PostgreSQL
 
-Состав и типы столбцов получены из фактической PostgreSQL БД через SQLAlchemy Inspector.
-
-PK — первичный ключ; FK — внешний ключ; UQ — уникальность. Проверки ролей и большинства входных полей выполняются схемами Pydantic и обработчиками API; ограничения БД перечислены отдельно.
+Сверен с фактической PostgreSQL через SQLAlchemy Inspector. PK — первичный ключ; FK — внешний; UQ — уникальность. «БД» обозначает ограничение СУБД, «API/Приложение» — проверку или значение, установленное Python-кодом.
 
 ## users
 
-| Ключ | Поле | Тип PostgreSQL | NULL | Назначение |
-|---|---|---|---|---|
-| PK | id | INTEGER | нет | Идентификатор аккаунта |
-| UQ | username | VARCHAR(50) | нет | Уникальный логин, 3–50 символов |
-| — | password_hash | VARCHAR(256) | нет | PBKDF2-хеш; исходный пароль не хранится |
-| — | full_name | VARCHAR(150) | нет | Фамилия, имя, отчество |
-| — | birth_date | DATE | да | Дата рождения; для студента обязательна |
-| UQ | email | VARCHAR(254) | нет | Уникальная электронная почта |
-| — | institution | VARCHAR(200) | нет | Учебное заведение |
-| — | education_level | VARCHAR(100) | нет | Уровень образования |
-| — | course | INTEGER | да | Курс обучения, 1–6 |
-| — | specialty | VARCHAR(150) | нет | Код и название специальности |
-| — | role | VARCHAR(20) | нет | admin / teacher / student |
-| — | is_active | BOOLEAN | нет | Признак действующего аккаунта |
-| — | token_version | INTEGER | нет | Версия токенов для отзыва сеансов |
-| FK → users.id | created_by | INTEGER | да | Кто создал аккаунт; допускается NULL для начального администратора |
+| Ключ | Имя поля | Тип данных | NULL | Дополнительные условия | Описание |
+|---|---|---|---|---|---|
+| PK | id | INTEGER | нет | БД: последовательность, шаг 1 | Идентификатор аккаунта |
+| UQ | username | VARCHAR (50) | нет | БД: UNIQUE | Уникальный логин, 3–50 символов |
+| — | password_hash | VARCHAR (256) | нет | — | PBKDF2-хеш; исходный пароль не хранится |
+| — | full_name | VARCHAR (150) | нет | — | Фамилия, имя, отчество |
+| — | birth_date | DATE | да | API: прошлое; обязательно студенту | Дата рождения; для студента обязательна |
+| UQ | email | VARCHAR (254) | нет | БД: UNIQUE | Уникальная электронная почта |
+| — | institution | VARCHAR (200) | нет | Приложение: пустая строка по умолчанию | Учебное заведение |
+
+| — | education_level | VARCHAR (100) | нет | Приложение: пустая строка по умолчанию | Уровень образования |
+| — | course | INTEGER | да | API: 1–6 | Курс обучения, 1–6 |
+| — | specialty | VARCHAR (150) | нет | Приложение: пустая строка по умолчанию | Код и название специальности |
+| — | role | VARCHAR (20) | нет | API: admin / teacher / student | admin / teacher / student |
+| — | is_active | BOOLEAN | нет | Приложение: True | Признак действующего аккаунта |
+| — | token_version | INTEGER | нет | Приложение: 0; увеличивается при отзыве | Версия токенов для отзыва сеансов |
+| FK → users.id | created_by | INTEGER | да | — | Кто создал аккаунт; допускается NULL для начального администратора |
 
 ## olympiads
 
-| Ключ | Поле | Тип PostgreSQL | NULL | Назначение |
-|---|---|---|---|---|
-| PK | id | INTEGER | нет | Идентификатор мероприятия |
-| — | title | VARCHAR(200) | нет | Название |
-| — | description | TEXT | нет | Описание |
-| FK → users.id | teacher_id | INTEGER | нет | Ответственный действующий преподаватель |
-| — | start_date | DATE | нет | Дата начала и источник года для фильтра |
-| — | end_date | DATE | нет | Дата окончания, не раньше начала |
-| — | protocol_status | VARCHAR(20) | нет | draft / prepared / published |
+| Ключ | Имя поля | Тип данных | NULL | Дополнительные условия | Описание |
+|---|---|---|---|---|---|
+| PK | id | INTEGER | нет | БД: последовательность, шаг 1 | Идентификатор мероприятия |
+| — | title | VARCHAR (200) | нет | — | Название |
+| — | description | TEXT | нет | Приложение: пустая строка по умолчанию | Описание |
+
+| FK → users.id | teacher_id | INTEGER | нет | — | Ответственный действующий преподаватель |
+| — | start_date | DATE | нет | — | Дата начала и источник года для фильтра |
+| — | end_date | DATE | нет | БД: не раньше start_date | Дата окончания, не раньше начала |
+| — | protocol_status | VARCHAR (20) | нет | Приложение: draft по умолчанию | draft / prepared / published |
 
 ## participations
 
-| Ключ | Поле | Тип PostgreSQL | NULL | Назначение |
-|---|---|---|---|---|
-| PK | id | INTEGER | нет | Идентификатор заявки |
-| FK → olympiads.id | olympiad_id | INTEGER | нет | Ссылка на мероприятие |
-| FK → users.id | student_id | INTEGER | нет | Ссылка на студента |
-| — | score | NUMERIC(8, 2) | да | Баллы 0…999999.99, два десятичных знака; NULL до ввода |
-| — | result | VARCHAR(20) | да | winner / prize / participant; NULL до ввода |
+| Ключ | Имя поля | Тип данных | NULL | Дополнительные условия | Описание |
+|---|---|---|---|---|---|
+| PK | id | INTEGER | нет | БД: последовательность, шаг 1 | Идентификатор заявки |
+| FK → olympiads.id | olympiad_id | INTEGER | нет | БД: UNIQUE пары olympiad_id/student_id | Ссылка на мероприятие |
+| FK → users.id | student_id | INTEGER | нет | БД: UNIQUE пары olympiad_id/student_id | Ссылка на студента |
+| — | score | NUMERIC (8, 2) | да | БД: ≥0; API: ≤999999.99, 2 знака | Баллы 0…999999.99, два десятичных знака; NULL до ввода |
+| — | result | VARCHAR (20) | да | API: winner / prize / participant | winner / prize / participant; NULL до ввода |
 
 ## attachments
 
-| Ключ | Поле | Тип PostgreSQL | NULL | Назначение |
-|---|---|---|---|---|
-| PK | id | INTEGER | нет | Идентификатор документа |
-| FK → olympiads.id | olympiad_id | INTEGER | нет | Владелец документа — мероприятие |
-| — | kind | VARCHAR(20) | нет | regulation / task / certificate / award |
-| — | title | VARCHAR(150) | нет | Отображаемое название |
-| — | original_name | VARCHAR(200) | нет | Исходное безопасное имя для скачивания |
-| — | stored_name | VARCHAR(100) | нет | Случайное имя физического файла, не выдаётся API |
+| Ключ | Имя поля | Тип данных | NULL | Дополнительные условия | Описание |
+|---|---|---|---|---|---|
+| PK | id | INTEGER | нет | БД: последовательность, шаг 1 | Идентификатор документа |
+| FK → olympiads.id | olympiad_id | INTEGER | нет | — | Владелец документа — мероприятие |
+| — | kind | VARCHAR (20) | нет | API: четыре типа документов | regulation / task / certificate / award |
+
+| — | title | VARCHAR (150) | нет | — | Отображаемое название |
+| — | original_name | VARCHAR (200) | нет | — | Исходное безопасное имя для скачивания |
+| — | stored_name | VARCHAR (100) | нет | — | Случайное имя физического файла, не выдаётся API |
 
 ## Связи и ограничения
 
