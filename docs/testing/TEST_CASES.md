@@ -197,4 +197,3 @@
 Автоматизация: test_demo_records_and_repeat.
 
 Факт: пройдено в повторном прогоне; метрики — [TESTING.md](TESTING.md).
-
