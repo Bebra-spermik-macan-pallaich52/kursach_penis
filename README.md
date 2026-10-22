@@ -20,7 +20,7 @@
 - PostgreSQL и SQLAlchemy. SQLite не используется даже в тестах.
 
 Код состоит из обычных функций и небольших моделей. Дополнительный клиент
-`client/` использует `requests.get/post/put/patch/delete`, как в презентации.
+`client/` использует `requests.get/post/patch/delete`, как в презентации.
 
 ## Быстрый запуск
 

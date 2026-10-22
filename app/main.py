@@ -1,7 +1,11 @@
 """Главное приложение и две версии REST API."""
 from contextlib import asynccontextmanager
+import json
 from fastapi import APIRouter, FastAPI
+from fastapi.encoders import jsonable_encoder
+from fastapi.exceptions import RequestValidationError
 from fastapi.openapi.docs import get_redoc_html, get_swagger_ui_html
+from fastapi.responses import Response
 from fastapi.staticfiles import StaticFiles
 from sqlalchemy import text
 from app.config import JWT_SECRET, ROOT, STORAGE
@@ -40,6 +44,13 @@ def create_api(version):
                           404: "Не найдено", 409: "Конфликт данных или состояния",
                           413: "Файл слишком большой", 422: "Ошибка входных данных"
                       }.items()})
+
+    @api.exception_handler(RequestValidationError)
+    async def validation_error(request, error):
+        # Некорректный Unicode в исходном поле тоже должен давать 422, а не сбой JSONResponse.
+        body = json.dumps(jsonable_encoder({"detail": error.errors()}), ensure_ascii=True)
+        return Response(body, status_code=422, media_type="application/json")
+
     api.include_router(auth.router)
     api.include_router(users.router)
     if version == "v2":

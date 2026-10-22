@@ -12,6 +12,7 @@ from app.database import get_db
 from app.models.attachment import Attachment
 from app.models.user import User
 from app.schemas.attachment_read import AttachmentRead
+from app.schemas.api_model import has_invalid_text
 from app.security import require_staff
 from app.services import check_owner, get_olympiad, save
 
@@ -51,6 +52,8 @@ def validate_file(filename, content):
 
 
 def store_file(db, olympiad_id, kind, title, filename, content, item=None):
+    if any(has_invalid_text(value) for value in (kind, title, filename)):
+        raise HTTPException(422, "Текст содержит недопустимые управляющие символы")
     if kind not in KINDS or not 1 <= len(title.strip()) <= 150:
         raise HTTPException(422, "Проверьте тип и название документа")
     filename = filename.replace("\\", "/").split("/")[-1]
@@ -137,6 +140,8 @@ def create_template(olympiad_id: int, kind: str = Form(), title: str = Form(max_
                       user: User = Depends(require_staff), db: Session = Depends(get_db)):
     olympiad = get_olympiad(db, olympiad_id)
     check_owner(olympiad, user)
+    if any(has_invalid_text(value) for value in (kind, title, text)):
+        raise HTTPException(422, "Текст содержит недопустимые управляющие символы")
     document = Document()
     document.add_heading(title, 0)
     document.add_paragraph(olympiad.title)

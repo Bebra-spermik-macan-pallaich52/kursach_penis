@@ -1,12 +1,12 @@
 from datetime import date
 from typing import Literal
 from pydantic import EmailStr, Field, model_validator
-from app.schemas.api_model import ApiModel
+from app.schemas.api_model import ApiModel, Password
 
 
 class UserCreate(ApiModel):
     username: str = Field(min_length=3, max_length=50, pattern=r"^[a-zA-Z0-9_]+$")
-    password: str = Field(min_length=8, max_length=128)
+    password: Password = Field(min_length=8, max_length=128)
     full_name: str = Field(min_length=5, max_length=150)
     email: EmailStr
     role: Literal["student", "teacher"]

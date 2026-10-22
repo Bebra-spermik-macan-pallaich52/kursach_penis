@@ -1,7 +1,7 @@
 from pydantic import Field
-from app.schemas.api_model import ApiModel
+from app.schemas.api_model import ApiModel, Password
 
 
 class PasswordChange(ApiModel):
-    old_password: str
-    new_password: str = Field(min_length=8, max_length=128)
+    old_password: Password
+    new_password: Password = Field(min_length=8, max_length=128)
