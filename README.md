@@ -2,7 +2,7 @@
 
 Учебный REST-сервис на FastAPI, SQLAlchemy и PostgreSQL. Запуск без Docker.
 Код находится в нескольких файлах: маршруты — `app/main.py`, таблицы —
-`app/models.py`, проверка входных данных — `app/schemas.py`, авторизация —
+`app/models/`, проверка входных данных — `app/schemas/`, авторизация —
 `app/auth.py`, работа с базой — `app/database.py`, отчёты — `app/reports.py`.
 
 Это простая версия в ветке `simple-student`. Отдельного клиента и презентации нет.
