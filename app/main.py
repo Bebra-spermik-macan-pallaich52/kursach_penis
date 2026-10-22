@@ -20,7 +20,13 @@ from app.auth import (create_token, get_current_user, hash_password, require_adm
                       require_staff, verify_password)
 from app.reports import RESULT_NAMES, make_report
 
-router = APIRouter()
+router = APIRouter(responses={
+    401: {"description": "Требуется действующий JWT"},
+    403: {"description": "Недостаточно прав или чужая олимпиада"},
+    404: {"description": "Запись не найдена или протокол скрыт"},
+    409: {"description": "Повторная запись или недопустимое состояние"},
+    413: {"description": "Файл превышает 5 МБ"},
+})
 v1_router = APIRouter()
 v2_router = APIRouter()
 MAX_FILE_SIZE = 5 * 1024 * 1024
@@ -181,6 +187,12 @@ def patch_olympiad(olympiad_id: int, data: OlympiadUpdate,
         setattr(item, name, value)
     save(db)
     return item
+
+
+@router.put("/olympiads/{olympiad_id}", response_model=OlympiadRead, summary="Заменить данные карточки")
+def replace_olympiad(olympiad_id: int, data: OlympiadCreate,
+                     user: User = Depends(require_admin), db: Session = Depends(get_db)):
+    return patch_olympiad(olympiad_id, OlympiadUpdate(**data.model_dump()), user, db)
 
 
 @router.delete("/olympiads/{olympiad_id}", status_code=204, summary="Удалить пустую олимпиаду")
@@ -378,7 +390,7 @@ def validate_file(filename, content):
     return extension
 
 
-def store_file(db, olympiad_id, kind, title, filename, content):
+def store_file(db, olympiad_id, kind, title, filename, content, item=None):
     if kind not in KINDS or not 1 <= len(title.strip()) <= 150:
         raise HTTPException(422, "Проверьте тип и название документа")
     filename = filename.replace("\\", "/").split("/")[-1]
@@ -388,8 +400,10 @@ def store_file(db, olympiad_id, kind, title, filename, content):
     STORAGE.mkdir(parents=True, exist_ok=True)
     stored_name = uuid4().hex + extension
     (STORAGE / stored_name).write_bytes(content)
-    item = Attachment(olympiad_id=olympiad_id)
-    db.add(item)
+    old_name = item.stored_name if item else None
+    if item is None:
+        item = Attachment(olympiad_id=olympiad_id)
+        db.add(item)
     item.kind, item.title = kind, title.strip()
     item.original_name, item.stored_name = filename, stored_name
     try:
@@ -397,6 +411,8 @@ def store_file(db, olympiad_id, kind, title, filename, content):
     except Exception:
         (STORAGE / stored_name).unlink(missing_ok=True)
         raise
+    if old_name:
+        (STORAGE / old_name).unlink(missing_ok=True)
     return item
 
 
@@ -442,6 +458,14 @@ def upload(olympiad_id: int, kind: str = Form(), title: str = Form(), file: Uplo
     check_owner(get_olympiad(db, olympiad_id), user)
     content = file.file.read(MAX_FILE_SIZE + 1)
     return store_file(db, olympiad_id, kind, title, file.filename or "", content)
+
+
+@router.put("/attachments/{attachment_id}", response_model=AttachmentRead, summary="Заменить файл или название")
+def replace(attachment_id: int, kind: str = Form(), title: str = Form(), file: UploadFile = File(),
+             user: User = Depends(require_staff), db: Session = Depends(get_db)):
+    item = get_attachment(db, attachment_id)
+    check_owner(get_olympiad(db, item.olympiad_id), user)
+    return store_file(db, item.olympiad_id, kind, title, file.filename or "", file.file.read(MAX_FILE_SIZE + 1), item)
 
 
 @router.delete("/attachments/{attachment_id}", status_code=204, summary="Удалить документ")
