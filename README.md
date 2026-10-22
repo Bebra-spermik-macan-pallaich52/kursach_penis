@@ -24,29 +24,50 @@
 
 ## Быстрый запуск
 
-Нужны **Python 3.12** (поддерживаемая среда проекта), **Docker с Compose v2**,
-свободные порты 5432 и 8000. Docker Desktop должен быть запущен.
+Нужны **Python 3.12** и **PostgreSQL 17**, установленная обычной программой.
+Сервис запускается в виртуальном окружении Python; Docker не требуется.
 Все команды выполняются **из корня проекта**.
 
-```bash
-python -m venv .venv
-# Linux/macOS:
-source .venv/bin/activate
-# Windows PowerShell вместо предыдущей строки:
-# .venv\Scripts\Activate.ps1
+1. Установите Python и PostgreSQL. Запомните пароль администратора `postgres`.
+   Для Windows подойдёт установщик с [официального сайта PostgreSQL](https://www.postgresql.org/download/windows/).
+   Инструкции Linux/macOS — в [руководстве установки](docs/guides/DEPLOYMENT.md).
+2. Запустите службу PostgreSQL и создайте учебного пользователя и две базы:
 
-python -m pip install -r requirements-lock.txt
-python scripts/configure.py
-docker compose up -d --wait
-python scripts/create_test_db.py
-python -m app.init_db --demo
-python -m uvicorn app.main:app --reload
-```
+   ```bash
+   psql -h localhost -U postgres -d postgres -v ON_ERROR_STOP=1 -f scripts/setup_database.sql
+   ```
 
-Если команда `python` недоступна в Linux, используйте `python3` при создании venv.
-В PowerShell при запрете активации можно запускать `.venv\Scripts\python.exe` напрямую.
-`requirements-lock.txt` фиксирует также транзитивные зависимости; `requirements.txt`
-и `requirements-dev.txt` разделяют рабочие и тестовые инструменты.
+   Введите пароль `postgres`, заданный при установке. Скрипт выполняется **один раз**
+   на новом сервере. Он создаёт роль `olympiad` с учебным паролем `olympiad_local`,
+   базы `olympiads` и `olympiads_test`. Если роль или базы уже существуют, используйте
+   их и проверьте настройки `.env`. Удалять существующие базы не нужно.
+
+3. Подготовьте Python-окружение и запустите API:
+
+   ```bash
+   python -m venv .venv
+   # Linux/macOS:
+   source .venv/bin/activate
+   # Windows PowerShell вместо предыдущей строки:
+   # .venv\Scripts\Activate.ps1
+
+   python -m pip install -r requirements-lock.txt
+   python scripts/configure.py
+   python scripts/create_test_db.py
+   python -m app.init_db --demo
+   python -m uvicorn app.main:app --reload
+   ```
+
+Если `psql` не найден, добавьте каталог `bin` PostgreSQL в PATH или укажите полный
+путь к `psql.exe`. В pgAdmin можно выполнить три команды из setup_database.sql
+**по одной**, подключившись администратором к базе `postgres` с включённым autocommit.
+
+Если команда `python` недоступна в Linux/macOS, используйте `python3` при создании venv.
+В PowerShell при запрете активации вызывайте `.venv\Scripts\python.exe` напрямую.
+`requirements-lock.txt` фиксирует все зависимости; `requirements.txt` и
+`requirements-dev.txt` разделяют рабочие и тестовые инструменты.
+На Linux/macOS после установки PostgreSQL и создания баз шаг 3 также можно выполнить
+командой `bash scripts/setup_environment.sh`, затем запустить Uvicorn.
 
 Локальные адреса для запуска на своём компьютере:
 
@@ -150,7 +171,7 @@ docs/
 reports/             Локальные результаты проверок (создаётся при запуске)
 ```
 
-В корне находятся README, пример `.env`, зависимости, `compose.yaml` и `pytest.ini`.
+В корне находятся README, пример `.env`, зависимости и `pytest.ini`.
 Генераторов записки, архивов, презентаций и дублирующих выгрузок в репозитории нет.
 
 - [Документация API](docs/api/API.md)
@@ -167,9 +188,11 @@ reports/             Локальные результаты проверок (�
 
 ## Остановка и данные
 
-Остановите Uvicorn сочетанием Ctrl+C. `docker compose stop` останавливает БД,
-`docker compose up -d --wait` запускает её снова. Данные живут в Docker volume,
-файлы — в `storage/`. Не используйте `docker compose down -v`: это удалит БД.
-Для переноса нужны **и дамп PostgreSQL, и папка storage**, подробности — в [руководстве развёртывания](docs/guides/DEPLOYMENT.md).
+Остановите Uvicorn сочетанием Ctrl+C. PostgreSQL работает как обычная служба ОС;
+её остановка не удаляет данные. Для повторного запуска убедитесь, что служба
+работает, и выполните `python -m uvicorn app.main:app --reload`.
+Строки базы хранятся в каталоге данных PostgreSQL, загруженные файлы — в `storage/`.
+Для переноса нужны **и дамп PostgreSQL, и папка storage** —
+[команды резервного копирования](docs/guides/DEPLOYMENT.md#резервное-копирование).
 В Git не входят `.env`, `.venv`, действующая БД и пользовательские файлы.
 Демонстрационные данные воспроизводятся командой `--demo`.
