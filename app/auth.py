@@ -7,10 +7,10 @@ import jwt
 from fastapi import Depends, HTTPException
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.orm import Session
-from app.config import JWT_SECRET, TOKEN_MINUTES
-from app.database import get_db
-from app.models.user import User
+from app.database import JWT_SECRET, get_db
+from app.models import User
 
+TOKEN_MINUTES = 60
 oauth2 = OAuth2PasswordBearer(tokenUrl="auth/token")
 
 

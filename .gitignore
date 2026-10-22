@@ -4,14 +4,10 @@ __pycache__/
 *.pyc
 .pytest_cache/
 .coverage
-htmlcov/
 storage/*
 !storage/.gitkeep
 *.log
-dist/
 reports/
 backup/
-
-
-.~lock.*#
+dist/
 *.tmp
