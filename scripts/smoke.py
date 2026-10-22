@@ -1,7 +1,8 @@
 """Проверка полного сценария через настоящий HTTP-сервер на учебной базе.
 
 Создаёт одну олимпиаду и одного вымышленного студента. Их данные сохраняются
-как пример опубликованного протокола. Запуск: python -m scripts.smoke.
+как пример опубликованного протокола. Файлы проверки записываются в reports/smoke/.
+Запуск: python -m scripts.smoke.
 """
 from datetime import date, datetime, timezone
 from pathlib import Path
@@ -48,7 +49,7 @@ def main():
     public = requests.get(URL + f"/olympiads/{oid}/protocol", timeout=10)
     public.raise_for_status()
     assert public.json()["participants"][0]["score"] == 95.5
-    target = ROOT / "docs" / "examples"
+    target = ROOT / "reports" / "smoke"
     target.mkdir(parents=True, exist_ok=True)
     for format in ("docx", "xlsx"):
         response = requests.get(URL + f"/olympiads/{oid}/reports/protocol", params={"format": format}, headers=teacher, timeout=10)
@@ -61,7 +62,7 @@ def main():
               "olympiadId": oid, "checks": ["login", "create_student", "create_olympiad", "enroll",
               "save_result", "private_before_publish", "prepare", "publish", "public_after_publish",
               "protocol_docx", "protocol_xlsx", "annual_docx", "annual_xlsx"]}
-    (ROOT / "docs" / "evidence" / "smoke.json").write_text(json.dumps(result, ensure_ascii=False, indent=2), encoding="utf-8")
+    (target / "result.json").write_text(json.dumps(result, ensure_ascii=False, indent=2), encoding="utf-8")
     print(json.dumps(result, ensure_ascii=False, indent=2))
 
 

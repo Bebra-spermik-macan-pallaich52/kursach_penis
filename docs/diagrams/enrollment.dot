@@ -1,8 +1,0 @@
-digraph G {
- graph[rankdir=TB,bgcolor="white",pad=.2];node[shape=box,fontname="DejaVu Sans",fontsize=13];edge[fontname="DejaVu Sans",fontsize=11];
- start[shape=oval,label="POST заявки"];auth[shape=diamond,label="JWT и роль student?"];lock[label="Найти олимпиаду и заблокировать её строку"];
- status[shape=diamond,label="draft и дата окончания\nне прошла?"];insert[label="INSERT participation"];unique[shape=diamond,label="Сохранение успешно?"];
- ok[shape=oval,label="201: заявка создана"];bad[shape=oval,label="401 / 403"];conflict[shape=oval,label="409: состояние или дубликат"];
- start->auth;auth->bad[label="нет"];auth->lock[label="да"];lock->status;status->conflict[label="нет"];status->insert[label="да"];
- insert->unique;unique->ok[label="да"];unique->conflict[label="нет: rollback"];
-}

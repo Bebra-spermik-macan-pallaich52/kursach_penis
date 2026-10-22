@@ -9,6 +9,7 @@ storage/*
 !storage/.gitkeep
 *.log
 dist/
+reports/
 
 
 .~lock.*#
