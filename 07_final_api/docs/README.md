@@ -1,24 +1,13 @@
-# Документация проекта
+# Документы проекта
 
-| Папка | Содержимое |
-|---|---|
-| [api](api/API.md) | Операции REST API и спецификации OpenAPI обеих версий |
-| [database](database/DATA_DICTIONARY.md) | Словарь данных и [SQL-схема](database/schema.sql) |
-| [guides](guides/USER_GUIDE.md) | Работа по ролям, [развёртывание](guides/DEPLOYMENT.md), [демонстрация](guides/DEFENSE.md) |
-| [coursework](coursework/REQUIREMENTS.md) | Требования, готовая записка и [памятка перед сдачей](coursework/ПЕРЕД_СДАЧЕЙ.md) |
-| [testing](testing/TESTING.md) | [План](testing/TEST_PLAN.md), [сценарии](testing/TEST_CASES.md), матрица и отчёт |
-| [diagrams](diagrams/README.md) | Схемы архитектуры, базы, пользователей и алгоритмов |
-
-## Пояснительная записка
-
-- [Редактируемый Word](coursework/Пояснительная_записка.docx)
-- [PDF для просмотра](coursework/Пояснительная_записка.pdf)
-
-Записка повторно проверена для этапа 7 01.11.2026: 60 страниц,
-обязательные таблицы и сценарии внутри документа, актуальные метрики и снимки,
-Times New Roman встроен в PDF. Неизвестные личные реквизиты оставлены для заполнения.
-Подробности и оставшиеся формальные ограничения — в [отчёте](testing/TESTING.md).
-
-Исходные учебные презентации, шаблоны, генераторы записки и архивов,
-промежуточные JSON/HTML-выгрузки не нужны для работы приложения и удалены.
-Отчёты pytest и файлы HTTP-проверки создаются локально в reports/ и не загружаются в Git.
+- [Пояснительная записка DOCX](coursework/Пояснительная_записка.docx).
+- [Пояснительная записка PDF](coursework/Пояснительная_записка.pdf).
+- [Требования](coursework/REQUIREMENTS.md).
+- [Документация API](api/API.md).
+- [План тестирования и матрица](testing/TEST_PLAN.md).
+- [Тест-кейсы](testing/TEST_CASES.md).
+- [Отчёт тестирования](testing/TESTING.md).
+- [Словарь данных](database/DATA_DICTIONARY.md).
+- [Диаграммы](diagrams/README.md).
+- [Руководство пользователя](guides/USER_GUIDE.md).
+- [Установка и запуск в Windows](../README.md).
