@@ -1,6 +1,6 @@
 import re
 from typing import Annotated
-from pydantic import BaseModel, ConfigDict, StringConstraints, field_validator
+from pydantic import BaseModel, ConfigDict, StringConstraints, field_validator, ValidationInfo
 from pydantic.alias_generators import to_camel
 
 Password = Annotated[str, StringConstraints(strip_whitespace=False)]
@@ -18,7 +18,9 @@ class ApiModel(BaseModel):
 
     @field_validator("*")
     @classmethod
-    def check_text(cls, value):
+    def check_text(cls, value, info: ValidationInfo):
         if isinstance(value, str) and has_invalid_text(value):
             raise ValueError("Текст содержит недопустимые управляющие символы")
+        if info.field_name in {"password", "old_password", "new_password"} and isinstance(value, str) and not value.strip():
+            raise ValueError("Пароль не может состоять из пробелов")
         return value

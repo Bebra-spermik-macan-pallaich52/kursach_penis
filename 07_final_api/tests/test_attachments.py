@@ -3,7 +3,7 @@ from io import BytesIO
 from docx import Document
 from openpyxl import Workbook
 import pytest
-from app.models.attachment import Attachment
+from app.api.attachments import get_attachment
 
 BASE='/api/v1'
 
@@ -33,8 +33,8 @@ def test_past_tasks(client,db,headers,olympiad):
     fid=response.json()['id']
     assert client.get(BASE+f'/attachments/{fid}').status_code==404
     assert client.get(BASE+f'/olympiads/{olympiad.id}/attachments').json()==[]
-    olympiad.start_date=date(date.today().year-1,1,1)
-    olympiad.end_date=olympiad.start_date; db.commit()
+    past = date(date.today().year-1,1,1)
+    db.execute("UPDATE olympiads SET start_date = %s, end_date = %s WHERE id = %s", (past, past, olympiad.id))
     assert client.get(BASE+f'/attachments/{fid}').status_code==200
     assert len(client.get(BASE+f'/olympiads/{olympiad.id}/attachments').json())==1
 
@@ -83,7 +83,7 @@ def test_office_uploads(client,headers,olympiad,format):
 
 def test_missing_file(client,db,headers,olympiad,tmp_path):
     response=upload(client,headers,olympiad); fid=response.json()['id']
-    item=db.get(Attachment,fid); (tmp_path/item.stored_name).unlink()
+    item=get_attachment(db,fid); (tmp_path/item.stored_name).unlink()
     assert client.get(BASE+f'/attachments/{fid}').status_code==404
     assert client.delete(BASE+'/attachments/99999999',headers=headers['teacher']).status_code==404
 
@@ -91,7 +91,7 @@ def test_missing_file(client,db,headers,olympiad,tmp_path):
 def test_no_path_traversal(client,db,headers,olympiad,tmp_path):
     response=upload(client,headers,olympiad,filename='../../escape.txt')
     assert response.status_code==201
-    item=db.get(Attachment,response.json()['id'])
+    item=get_attachment(db,response.json()['id'])
     assert item.original_name=='escape.txt'
     assert '/' not in item.stored_name
     assert (tmp_path/item.stored_name).is_file()

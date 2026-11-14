@@ -3,55 +3,44 @@ import os
 from pathlib import Path
 import pytest
 from dotenv import load_dotenv
-from sqlalchemy import create_engine
-from sqlalchemy.engine import make_url
-from sqlalchemy.orm import Session
+from psycopg.conninfo import conninfo_to_dict
 from fastapi.testclient import TestClient
 
 load_dotenv(Path(__file__).resolve().parents[1] / ".env")
-test_url = os.environ["TEST_DATABASE_URL"]
-if not make_url(test_url).database.endswith("_test"):
+test_url = os.environ["TEST_DATABASE_URL"].replace("postgresql+psycopg://", "postgresql://", 1)
+if not conninfo_to_dict(test_url).get("dbname", "").endswith("_test"):
     raise RuntimeError("Тесты разрешены только в отдельной БД с суффиксом _test")
 os.environ["DATABASE_URL"] = test_url
 
 from app.main import app
-from app.database import Base, get_db
+from app.database import connect
+from app.migrate import migrate
 from app.models.user import User
 from app.models.olympiad import Olympiad
-from app.security import hash_password, create_token
+from app.records import insert_user, insert_olympiad
+from app.security import hash_password
+from app.create_token import create_token
 
 
-@pytest.fixture(scope="session")
-def test_engine():
-    engine = create_engine(test_url)
-    Base.metadata.create_all(engine)
-    yield engine
-    engine.dispose()
+@pytest.fixture(scope="session", autouse=True)
+def test_database():
+    migrate()
 
 
 @pytest.fixture
-def db(test_engine):
-    with test_engine.connect() as connection:
-        transaction = connection.begin()
-        with Session(bind=connection, expire_on_commit=False,
-                     join_transaction_mode="create_savepoint") as session:
-            yield session
-        transaction.rollback()
+def db(test_database):
+    with connect(test_url, autocommit=True) as connection:
+        connection.execute("TRUNCATE attachments, participations, olympiads, users RESTART IDENTITY CASCADE")
+        yield connection
+        connection.execute("TRUNCATE attachments, participations, olympiads, users RESTART IDENTITY CASCADE")
 
 
 @pytest.fixture
 def client(db, tmp_path, monkeypatch):
     import app.api.attachments as files
     monkeypatch.setattr(files, "STORAGE", tmp_path)
-    def override_db():
-        yield db
-    applications = [app] + [route.app for route in app.routes if hasattr(route, "app") and isinstance(route.app, type(app))]
-    for application in applications:
-        application.dependency_overrides[get_db] = override_db
     with TestClient(app) as api:
         yield api
-    for application in applications:
-        application.dependency_overrides.clear()
 
 
 @pytest.fixture(scope="session")
@@ -69,10 +58,8 @@ def accounts(db, password_hash):
                     full_name=username + " Тестовый Пользователь", email=username + "@example.org",
                     birth_date=date(2006, 1, 1), institution="Колледж", education_level="СПО",
                     course=3, specialty="Информационные системы")
-        db.add(item)
-        db.flush()
+        insert_user(db, item)
         users[username] = item
-    db.commit()
     return users
 
 
@@ -85,6 +72,4 @@ def headers(accounts):
 def olympiad(db, accounts):
     item = Olympiad(title="Олимпиада Python", description="Учебная олимпиада",
                     teacher_id=accounts["teacher"].id, start_date=date.today(), end_date=date.today())
-    db.add(item)
-    db.commit()
-    return item
+    return insert_olympiad(db, item)

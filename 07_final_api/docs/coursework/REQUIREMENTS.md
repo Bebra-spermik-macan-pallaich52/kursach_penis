@@ -23,7 +23,7 @@
 | R14 | Баллы, результат, подготовка, отзыв | PUT /participations/{id}/result; PATCH .../protocol |
 | R15 | Неограниченное число грамот и сертификатов | attachments и templates, kind=award/certificate |
 | R16 | Версии и документация | /api/v1, /api/v2; /docs и /redoc внутри каждой версии |
-| R17 | PostgreSQL и ORM | PostgreSQL 17, SQLAlchemy 2; [schema.sql](../database/schema.sql) |
+| R17 | PostgreSQL и SQL-миграции | PostgreSQL 17, psycopg 3; [schema.sql](../database/schema.sql) |
 | R18 | Изолированные тесты, покрытие маршрутов ≥80% | pytest, отдельная PostgreSQL БД; локальные отчёты reports/tests/ |
 | R19 | Данные: не менее 50 на основную сущность | --demo: users=111, olympiads=50, participations=150, attachments=200 |
 
@@ -71,3 +71,5 @@ PostgreSQL устанавливается как обычная служба О�
 Повторная проверка этапа 7 и ограничения описаны в
 [отчёте](../testing/TESTING.md). План и сценарии выделены в отдельные файлы и
 также приведены в §2.5 записки, как требует методичка.
+
+По дополнительному требованию заказчика доступ к PostgreSQL переведён на psycopg и параметризованные SQL-запросы. Это изменение исходного перечня стека методички, где был указан SQLAlchemy.

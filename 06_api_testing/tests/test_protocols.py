@@ -83,7 +83,8 @@ def test_enrollment_and_deletion(client,db,headers,olympiad):
     assert client.get(BASE+'/users/me/participations',headers=headers['student']).json()==[]
     pid=enroll(client,headers,olympiad)
     assert client.delete(BASE+f'/participations/{pid}',headers=headers['teacher']).status_code==204
-    olympiad.start_date=date.today()-timedelta(days=2); olympiad.end_date=date.today()-timedelta(days=1); db.commit()
+    db.execute("UPDATE olympiads SET start_date = %s, end_date = %s WHERE id = %s",
+               (date.today()-timedelta(days=2), date.today()-timedelta(days=1), olympiad.id))
     assert client.post(BASE+f'/olympiads/{oid}/participations',headers=headers['student']).status_code==409
 
 
@@ -95,7 +96,7 @@ def test_protocol_incomplete_future_and_validation(client,db,headers,olympiad):
                  {'score':1000000,'result':'winner'},{'score':1.111,'result':'winner'}]:
         assert client.put(BASE+f'/participations/{pid}/result',json=data,headers=headers['teacher']).status_code==422
     score(client,headers,pid)
-    olympiad.end_date=date.today()+timedelta(days=1); db.commit()
+    db.execute("UPDATE olympiads SET end_date = %s WHERE id = %s", (date.today()+timedelta(days=1), olympiad.id))
     assert client.patch(url,json={'status':'prepared'},headers=headers['teacher']).status_code==409
     assert client.patch(url,json={'status':'invalid'},headers=headers['teacher']).status_code==422
 
@@ -110,7 +111,7 @@ def test_not_found(client,headers,method,path,data):
 
 
 def test_excel_formula_safety(client,db,headers,accounts,olympiad):
-    accounts['student'].full_name='=HYPERLINK("bad")'; db.commit()
+    db.execute("UPDATE users SET full_name = %s WHERE id = %s", ('=HYPERLINK("bad")', accounts["student"].id))
     pid=enroll(client,headers,olympiad); score(client,headers,pid)
     response=client.get(BASE+f'/olympiads/{olympiad.id}/reports/protocol?format=xlsx',headers=headers['teacher'])
     book=load_workbook(BytesIO(response.content))

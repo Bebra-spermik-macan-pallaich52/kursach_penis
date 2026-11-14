@@ -2,25 +2,24 @@ from pathlib import Path
 import os
 import psycopg
 from psycopg import sql
-from sqlalchemy.engine import make_url
+from psycopg.conninfo import conninfo_to_dict
 from dotenv import load_dotenv
 
 load_dotenv(Path(__file__).resolve().parents[1] / ".env")
-url = make_url(os.environ["TEST_DATABASE_URL"])
-if not url.database or not url.database.endswith("_test"):
+url = os.environ["TEST_DATABASE_URL"].replace("postgresql+psycopg://", "postgresql://", 1)
+options = conninfo_to_dict(url)
+name = options.get("dbname", "")
+if not name.endswith("_test"):
     raise RuntimeError("Имя тестовой БД должно оканчиваться на _test")
-with psycopg.connect(host=url.host, port=url.port or 5432, user=url.username,
-                     password=url.password, dbname="postgres", autocommit=True) as conn:
-    if not conn.execute("SELECT 1 FROM pg_database WHERE datname = %s", (url.database,)).fetchone():
+with psycopg.connect(**{**options, "dbname": "postgres"}, autocommit=True) as db:
+    if not db.execute("SELECT 1 FROM pg_database WHERE datname = %s", (name,)).fetchone():
         try:
-            conn.execute(sql.SQL("CREATE DATABASE {}").format(sql.Identifier(url.database)))
+            db.execute(sql.SQL("CREATE DATABASE {}").format(sql.Identifier(name)))
         except psycopg.errors.InsufficientPrivilege:
-            raise SystemExit("Создайте тестовую БД от администратора по scripts/setup_database.sql")
-        print("Создана тестовая БД", url.database)
+            raise SystemExit("Создайте тестовую БД по scripts/setup_database.sql от администратора")
+        print("Создана тестовая БД", name)
     else:
         print("Тестовая БД уже существует")
-
-with psycopg.connect(host=url.host, port=url.port or 5432, user=url.username,
-                     password=url.password, dbname=url.database) as conn:
-    conn.execute("SELECT 1")
+with psycopg.connect(url) as db:
+    db.execute("SELECT 1")
     print("Подключение к тестовой БД проверено")

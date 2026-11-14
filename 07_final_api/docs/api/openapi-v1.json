@@ -107,6 +107,102 @@
         }
       }
     },
+    "/auth/refresh": {
+      "post": {
+        "tags": [
+          "Авторизация и профиль"
+        ],
+        "summary": "Обновить действующий JWT-токен",
+        "operationId": "renew_token_auth_refresh_post",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TokenRead"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Неверный текущий пароль",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorRead"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Требуется вход",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorRead"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Недостаточно прав",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorRead"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Не найдено",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorRead"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Конфликт данных или состояния",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorRead"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Файл слишком большой",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorRead"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Ошибка входных данных",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorRead"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ]
+      }
+    },
     "/users/me": {
       "get": {
         "tags": [
@@ -732,6 +828,7 @@
             "required": true,
             "schema": {
               "type": "integer",
+              "exclusiveMinimum": 0,
               "title": "User Id"
             }
           }
@@ -1063,6 +1160,7 @@
             "required": true,
             "schema": {
               "type": "integer",
+              "exclusiveMinimum": 0,
               "title": "Olympiad Id"
             }
           }
@@ -1168,6 +1266,7 @@
             "required": true,
             "schema": {
               "type": "integer",
+              "exclusiveMinimum": 0,
               "title": "Olympiad Id"
             }
           }
@@ -1283,6 +1382,7 @@
             "required": true,
             "schema": {
               "type": "integer",
+              "exclusiveMinimum": 0,
               "title": "Olympiad Id"
             }
           }
@@ -1398,6 +1498,7 @@
             "required": true,
             "schema": {
               "type": "integer",
+              "exclusiveMinimum": 0,
               "title": "Olympiad Id"
             }
           }
@@ -1498,6 +1599,7 @@
             "required": true,
             "schema": {
               "type": "integer",
+              "exclusiveMinimum": 0,
               "title": "Olympiad Id"
             }
           }
@@ -1603,6 +1705,7 @@
             "required": true,
             "schema": {
               "type": "integer",
+              "exclusiveMinimum": 0,
               "title": "Olympiad Id"
             }
           }
@@ -1814,6 +1917,7 @@
             "required": true,
             "schema": {
               "type": "integer",
+              "exclusiveMinimum": 0,
               "title": "Participation Id"
             }
           }
@@ -1931,6 +2035,7 @@
             "required": true,
             "schema": {
               "type": "integer",
+              "exclusiveMinimum": 0,
               "title": "Participation Id"
             }
           }
@@ -2126,6 +2231,7 @@
             "required": true,
             "schema": {
               "type": "integer",
+              "exclusiveMinimum": 0,
               "title": "Olympiad Id"
             }
           }
@@ -2231,6 +2337,7 @@
             "required": true,
             "schema": {
               "type": "integer",
+              "exclusiveMinimum": 0,
               "title": "Olympiad Id"
             }
           }
@@ -2348,6 +2455,7 @@
             "required": true,
             "schema": {
               "type": "integer",
+              "exclusiveMinimum": 0,
               "title": "Olympiad Id"
             }
           }
@@ -2455,6 +2563,7 @@
             "required": true,
             "schema": {
               "type": "integer",
+              "exclusiveMinimum": 0,
               "title": "Olympiad Id"
             }
           },
@@ -2700,6 +2809,7 @@
             "required": true,
             "schema": {
               "type": "integer",
+              "exclusiveMinimum": 0,
               "title": "Olympiad Id"
             }
           }
@@ -2809,6 +2919,7 @@
             "required": true,
             "schema": {
               "type": "integer",
+              "exclusiveMinimum": 0,
               "title": "Olympiad Id"
             }
           }
@@ -2921,6 +3032,7 @@
             "required": true,
             "schema": {
               "type": "integer",
+              "exclusiveMinimum": 0,
               "title": "Attachment Id"
             }
           }
@@ -3027,6 +3139,7 @@
             "required": true,
             "schema": {
               "type": "integer",
+              "exclusiveMinimum": 0,
               "title": "Attachment Id"
             }
           }
@@ -3142,6 +3255,7 @@
             "required": true,
             "schema": {
               "type": "integer",
+              "exclusiveMinimum": 0,
               "title": "Attachment Id"
             }
           }
@@ -3242,6 +3356,7 @@
             "required": true,
             "schema": {
               "type": "integer",
+              "exclusiveMinimum": 0,
               "title": "Olympiad Id"
             }
           }
@@ -3353,6 +3468,7 @@
             "required": true,
             "schema": {
               "type": "integer",
+              "exclusiveMinimum": 0,
               "title": "Olympiad Id"
             }
           }
@@ -4051,6 +4167,8 @@
         "properties": {
           "oldPassword": {
             "type": "string",
+            "maxLength": 128,
+            "minLength": 1,
             "title": "Oldpassword"
           },
           "newPassword": {

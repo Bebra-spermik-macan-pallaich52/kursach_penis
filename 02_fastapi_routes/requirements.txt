@@ -2,6 +2,5 @@ fastapi==0.115.12
 pydantic==2.11.7
 anyio==4.9.0
 uvicorn==0.34.3
-SQLAlchemy==2.0.41
 psycopg[binary]==3.2.9
 python-dotenv==1.1.0

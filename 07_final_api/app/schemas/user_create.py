@@ -13,13 +13,13 @@ class UserCreate(ApiModel):
     birth_date: date | None = None
     institution: str = Field(default="", max_length=200)
     education_level: str = Field(default="", max_length=100)
-    course: int | None = Field(default=None, ge=1, le=6)
+    course: int | None = Field(default=None, ge=1, le=6, strict=True)
     specialty: str = Field(default="", max_length=150)
 
     @model_validator(mode="after")
     def check_student(self):
-        if self.birth_date and self.birth_date >= date.today():
-            raise ValueError("Дата рождения должна быть в прошлом")
+        if self.birth_date and not date(1900, 1, 1) <= self.birth_date < date.today():
+            raise ValueError("Укажите дату рождения между 1900 годом и сегодняшним днём")
         if self.role == "student" and not all([self.birth_date, self.institution,
                 self.education_level, self.course, self.specialty]):
             raise ValueError("Для студента нужны все учебные данные и дата рождения")

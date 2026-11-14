@@ -1,11 +1,10 @@
-from datetime import datetime, timedelta, timezone
 import hashlib
 import hmac
 import secrets
 import jwt
 from fastapi import Depends, HTTPException
 from fastapi.security import OAuth2PasswordBearer
-from sqlalchemy.orm import Session
+from psycopg import Connection
 from app.config import JWT_SECRET, TOKEN_MINUTES
 from app.database import get_db
 from app.models.user import User
@@ -30,23 +29,17 @@ def verify_password(password, stored):
         return False
 
 
-def create_token(user):
-    now = datetime.now(timezone.utc)
-    return jwt.encode({"sub": str(user.id), "ver": user.token_version,
-                       "iat": now, "exp": now + timedelta(minutes=TOKEN_MINUTES)},
-                      JWT_SECRET, algorithm="HS256")
-
-
-def get_current_user(token: str = Depends(oauth2), db: Session = Depends(get_db)):
+def get_current_user(token: str = Depends(oauth2), db: Connection = Depends(get_db)):
     error = HTTPException(401, "Войдите в систему повторно",
                           headers={"WWW-Authenticate": "Bearer"})
     try:
         payload = jwt.decode(token, JWT_SECRET, algorithms=["HS256"],
                              options={"require": ["sub", "exp", "iat", "ver"]})
-        user = db.get(User, int(payload["sub"]))
+        row = db.execute("SELECT * FROM users WHERE id = %s", (int(payload["sub"]),)).fetchone()
+        user = User(**row) if row else None
     except (jwt.InvalidTokenError, ValueError, TypeError, KeyError):
         raise error
-    if not user or not user.is_active or payload["ver"] != user.token_version:
+    if type(payload["ver"]) is not int or not user or not user.is_active or payload["ver"] != user.token_version:
         raise error
     return user
 

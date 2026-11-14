@@ -4,11 +4,12 @@ from fastapi import APIRouter, FastAPI
 from fastapi.encoders import jsonable_encoder
 from fastapi.exceptions import RequestValidationError
 from fastapi.openapi.docs import get_redoc_html, get_swagger_ui_html
-from fastapi.responses import Response
+from fastapi.responses import Response, JSONResponse
+from psycopg import IntegrityError, DataError
+from psycopg.errors import CheckViolation
 from fastapi.staticfiles import StaticFiles
-from sqlalchemy import text
 from app.config import JWT_SECRET, ROOT, STORAGE
-from app.database import engine
+from app.database import connect
 from app.schemas.error_read import ErrorRead
 from app.api import auth, users, olympiads, participations, protocols, attachments
 
@@ -28,8 +29,8 @@ async def lifespan(app):
     if len(JWT_SECRET) < 32 or JWT_SECRET == "GENERATE_WITH_CONFIGURE_SCRIPT":
         raise RuntimeError("Создайте случайный JWT_SECRET: python scripts/configure.py")
     STORAGE.mkdir(parents=True, exist_ok=True)
-    with engine.connect() as conn:
-        conn.execute(text("SELECT 1"))
+    with connect() as conn:
+        conn.execute("SELECT 1")
     yield
 
 
@@ -47,8 +48,18 @@ def create_api(version):
     @api.exception_handler(RequestValidationError)
     async def validation_error(request, error):
 
-        body = json.dumps(jsonable_encoder({"detail": error.errors()}), ensure_ascii=True)
+        errors = [{"loc": item["loc"], "msg": item["msg"], "type": item["type"]} for item in error.errors()]
+        body = json.dumps(jsonable_encoder({"detail": errors}), ensure_ascii=True)
         return Response(body, status_code=422, media_type="application/json")
+
+    @api.exception_handler(IntegrityError)
+    async def integrity_error(request, error):
+        code = 422 if isinstance(error, CheckViolation) else 409
+        return JSONResponse({"detail": "Данные нарушают ограничения базы"}, status_code=code)
+
+    @api.exception_handler(DataError)
+    async def data_error(request, error):
+        return JSONResponse({"detail": "Проверьте формат и длину данных"}, status_code=422)
 
     api.include_router(auth.router)
     api.include_router(users.router)
@@ -85,8 +96,8 @@ app.mount("/static", StaticFiles(directory=ROOT / "app" / "static"), name="stati
 
 @app.get("/health", tags=["Состояние"], summary="Проверить подключение к БД")
 def health():
-    with engine.connect() as connection:
-        connection.execute(text("SELECT 1"))
+    with connect() as connection:
+        connection.execute("SELECT 1")
     return {"status": "ok", "database": "postgresql"}
 
 

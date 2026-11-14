@@ -18,7 +18,7 @@ def main():
     token = None
     while True:
         print("\n1 — олимпиады, 2 — карточка, 3 — протокол, 4 — документы")
-        print("5 — войти, 6 — профиль, 7 — мои результаты, 8 — записаться, 0 — выход")
+        print("5 — войти, 6 — профиль, 7 — мои результаты, 8 — записаться, 9 — обновить токен, 0 — выход")
         try:
             choice = input("Команда: ").strip()
             if choice == "0":
@@ -41,13 +41,20 @@ def main():
                     print("Вход выполнен")
                 else:
                     show_response(response)
-            elif choice in ("6", "7", "8"):
+            elif choice in ("6", "7", "8", "9"):
                 if not token:
                     print("Сначала выполните вход")
                 elif choice == "6":
                     show_response(accounts.get_profile(token))
                 elif choice == "7":
                     show_response(accounts.get_results(token))
+                elif choice == "9":
+                    response = accounts.refresh_session(token)
+                    if response.ok:
+                        token = response.json()["access_token"]
+                        print("Токен обновлён")
+                    else:
+                        show_response(response)
                 else:
                     show_response(accounts.enroll(int(input("Номер олимпиады: ")), token))
             else:

@@ -16,3 +16,7 @@ def get_results(token):
 
 def enroll(olympiad_id, token):
     return requests.post(f"{BASE_URL}/olympiads/{olympiad_id}/participations", headers={"Authorization": f"Bearer {token}"}, timeout=TIMEOUT)
+
+
+def refresh_session(token):
+    return requests.post(f"{BASE_URL}/auth/refresh", headers={"Authorization": f"Bearer {token}"}, timeout=TIMEOUT)

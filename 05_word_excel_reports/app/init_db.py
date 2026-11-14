@@ -5,7 +5,8 @@ import os
 from uuid import uuid4
 from docx import Document
 from app.config import STORAGE
-from app.database import SessionLocal
+from app.database import connect
+from app.records import insert_user, insert_olympiad, insert_participation, insert_attachment
 from app.migrate import migrate
 from app.models.user import User
 from app.models.olympiad import Olympiad
@@ -17,13 +18,12 @@ from app.security import hash_password
 def add_user(db, username, password, role, full_name, **extra):
     user = User(username=username, password_hash=hash_password(password), role=role,
                 full_name=full_name, email=username + "@example.org", **extra)
-    db.add(user)
-    db.flush()
+    insert_user(db, user)
     return user
 
 
 def seed_demo(db):
-    if db.query(User).first():
+    if db.execute("SELECT 1 FROM users LIMIT 1").fetchone():
         print("База непустая: демонстрационные данные не добавлены и не изменены")
         return
     admin = add_user(db, "admin", "Admin2026!", "admin", "Администратор учебной системы")
@@ -50,10 +50,9 @@ def seed_demo(db):
                 description="Вымышленное мероприятие для демонстрации и тестирования.",
                 teacher_id=teachers[i].id, start_date=event_date, end_date=event_date,
                 protocol_status=["draft", "published", "prepared"][i % 3])
-            db.add(olympiad)
-            db.flush()
+            insert_olympiad(db, olympiad)
             for k in range(3):
-                db.add(Participation(olympiad_id=olympiad.id,
+                insert_participation(db, Participation(olympiad_id=olympiad.id,
                     student_id=students[(i * 3 + k) % 60].id,
                     score=95 - k * 15, result=["winner", "prize", "participant"][k]))
             for kind, title in [("regulation", "Положение"), ("task", "Задание"),
@@ -74,7 +73,7 @@ def seed_demo(db):
                 path = STORAGE / name
                 path.write_bytes(stream.getvalue())
                 created_files.append(path)
-                db.add(Attachment(olympiad_id=olympiad.id, kind=kind, title=title,
+                insert_attachment(db, Attachment(olympiad_id=olympiad.id, kind=kind, title=title,
                     original_name=kind + ".docx", stored_name=name))
         db.commit()
     except Exception:
@@ -91,10 +90,10 @@ def main():
     parser.add_argument("--demo", action="store_true", help="Заполнить только пустую БД учебными данными")
     args = parser.parse_args()
     migrate()
-    with SessionLocal() as db:
+    with connect() as db:
         if args.demo:
             seed_demo(db)
-        elif not db.query(User).first():
+        elif not db.execute("SELECT 1 FROM users LIMIT 1").fetchone():
             username = os.getenv("ADMIN_USERNAME", "admin")
             password = os.getenv("ADMIN_PASSWORD", "")
             if len(password) < 8:

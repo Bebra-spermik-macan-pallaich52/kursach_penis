@@ -1,6 +1,7 @@
 from datetime import date, timedelta
 import pytest
 from app.models.olympiad import Olympiad
+from app.records import insert_olympiad
 
 BASE='/api/v1'
 
@@ -32,7 +33,7 @@ def test_crud_forbidden(client, headers, accounts, olympiad, actor):
 
 
 def test_filter_and_versions(client, db, accounts, olympiad):
-    db.add(Olympiad(title='Историческая олимпиада',teacher_id=accounts['teacher'].id,
+    insert_olympiad(db, Olympiad(title='Историческая олимпиада',teacher_id=accounts['teacher'].id,
                    start_date=date(2020,1,1),end_date=date(2020,1,1)))
     db.commit()
     response=client.get(BASE+'/olympiads',params={'year':2020})
@@ -66,12 +67,12 @@ def test_invalid_olympiad(client, headers, accounts, olympiad):
 
 
 def test_cannot_modify_finalized(client, db, headers, olympiad):
-    olympiad.protocol_status='prepared'; db.commit()
+    db.execute("UPDATE olympiads SET protocol_status = 'prepared' WHERE id = %s", (olympiad.id,))
     url=BASE+f'/olympiads/{olympiad.id}'
     assert client.patch(url,json={'title':'Новое название'},headers=headers['admin']).status_code==409
     assert client.delete(url,headers=headers['admin']).status_code==409
 
 
 def test_inactive_teacher(client, db, accounts, headers):
-    accounts['teacher'].is_active=False; db.commit()
+    db.execute("UPDATE users SET is_active = false WHERE id = %s", (accounts['teacher'].id,))
     assert client.post(BASE+'/olympiads',json=payload(accounts['teacher'].id),headers=headers['admin']).status_code==422

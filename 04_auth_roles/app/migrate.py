@@ -1,19 +1,17 @@
 from pathlib import Path
-from sqlalchemy import text
-from app.database import engine
+from app.database import connect
 
 
 def migrate():
     folder = Path(__file__).resolve().parents[1] / "migrations"
-    with engine.begin() as connection:
-        connection.execute(text("CREATE TABLE IF NOT EXISTS schema_migrations (version varchar(50) PRIMARY KEY)"))
-        versions = set(connection.execute(text("SELECT version FROM schema_migrations")).scalars())
+    with connect() as db:
+        db.execute("CREATE TABLE IF NOT EXISTS schema_migrations (version varchar(50) PRIMARY KEY)")
+        versions = {row["version"] for row in db.execute("SELECT version FROM schema_migrations")}
         for path in sorted(folder.glob("*.sql")):
-            if path.stem in versions:
-                continue
-            connection.exec_driver_sql(path.read_text(encoding="utf-8"))
-            connection.execute(text("INSERT INTO schema_migrations (version) VALUES (:version)"), {"version": path.stem})
-            print("Применена миграция:", path.stem)
+            if path.stem not in versions:
+                db.execute(path.read_text(encoding="utf-8"))
+                db.execute("INSERT INTO schema_migrations (version) VALUES (%s)", (path.stem,))
+                print("Применена миграция:", path.stem)
     print("Структура БД актуальна")
 
 

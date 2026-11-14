@@ -42,8 +42,7 @@ def test_bad_login(client, accounts, username, password):
 
 
 def test_inactive_login(client, db, accounts):
-    accounts['student'].is_active = False
-    db.commit()
+    db.execute("UPDATE users SET is_active = false WHERE id = %s", (accounts['student'].id,))
     assert client.post(BASE + '/auth/token', data={'username':'student','password':'TestPass2026!'}).status_code == 401
 
 
