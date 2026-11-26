@@ -8,6 +8,7 @@ from app.refresh_token import refresh_token
 
 @pytest.mark.parametrize('version', ['v1', 'v2'])
 def test_refresh_rotates_token(client, accounts, version):
+    """Обновление JWT отзывает прежний токен и выдаёт работающий новый."""
     base = '/api/' + version
     response = client.post(base + '/auth/token', data={'username': 'student', 'password': 'TestPass2026!'})
     token = response.json()['access_token']
@@ -29,6 +30,7 @@ def test_refresh_rotates_token(client, accounts, version):
 
 @pytest.mark.parametrize('version', ['v1', 'v2'])
 def test_refresh_rejects_invalid_and_expired_tokens(client, accounts, version):
+    """Обновить недействующий или просроченный JWT нельзя."""
     url = '/api/' + version + '/auth/refresh'
     assert client.post(url).status_code == 401
     assert client.post(url, headers={'Authorization': 'Bearer invalid'}).status_code == 401
@@ -40,6 +42,7 @@ def test_refresh_rejects_invalid_and_expired_tokens(client, accounts, version):
 
 
 def test_refresh_after_account_block(client, accounts, headers):
+    """Блокировка аккаунта запрещает обновление его токена."""
     response = client.patch('/api/v1/users/' + str(accounts['student'].id),
                             json={'isActive': False}, headers=headers['admin'])
     assert response.status_code == 200
@@ -47,6 +50,7 @@ def test_refresh_after_account_block(client, accounts, headers):
 
 
 def test_token_functions_and_unique_values(accounts):
+    """Создание и обновление разделены по файлам; JWT имеют разные значения."""
     assert create_token.__module__ == 'app.create_token'
     assert refresh_token.__module__ == 'app.refresh_token'
     assert create_token(accounts['student']) != create_token(accounts['student'])

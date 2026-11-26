@@ -16,6 +16,7 @@ def student_data(username='new_student'):
 
 
 def test_password_hashes():
+    """Одинаковые пароли получают разные соли; неверный пароль не проходит проверку."""
     value = hash_password('TestPass2026!')
     assert value != hash_password('TestPass2026!')
     assert verify_password('TestPass2026!', value)
@@ -25,6 +26,7 @@ def test_password_hashes():
 
 
 def test_login_profile_logout(client, accounts):
+    """После входа доступен профиль, после выхода прежний токен отозван."""
     response = client.post(BASE + '/auth/token', data={'username': 'student', 'password': 'TestPass2026!'})
     assert response.status_code == 200
     header = {'Authorization': 'Bearer ' + response.json()['access_token']}
@@ -38,21 +40,25 @@ def test_login_profile_logout(client, accounts):
 
 @pytest.mark.parametrize('username,password', [('student','wrong'),('missing','TestPass2026!')])
 def test_bad_login(client, accounts, username, password):
+    """Неверные учётные данные не дают JWT."""
     assert client.post(BASE + '/auth/token', data={'username':username,'password':password}).status_code == 401
 
 
 def test_inactive_login(client, db, accounts):
+    """Заблокированный пользователь не может войти."""
     db.execute("UPDATE users SET is_active = false WHERE id = %s", (accounts['student'].id,))
     assert client.post(BASE + '/auth/token', data={'username':'student','password':'TestPass2026!'}).status_code == 401
 
 
 @pytest.mark.parametrize('token', ['bad.token.value', '', 'undefined'])
 def test_invalid_token(client, token):
+    """Повреждённый Bearer-токен отклоняется."""
     assert client.get(BASE + '/users/me', headers={'Authorization': 'Bearer ' + token}).status_code == 401
 
 
 @pytest.mark.parametrize('subject,expired', [('123456789', False), ('oops',False), ('1',True)])
 def test_missing_user_and_expired_token(client, subject, expired):
+    """Отсутствующий пользователь и просроченный JWT дают 401."""
     now = datetime.now(timezone.utc)
     token = jwt.encode({'sub':subject,'ver':0,'iat':now-timedelta(hours=2),
         'exp':now-timedelta(hours=1) if expired else now+timedelta(hours=1)},JWT_SECRET,algorithm='HS256')
@@ -60,6 +66,7 @@ def test_missing_user_and_expired_token(client, subject, expired):
 
 
 def test_profile_and_password(client, headers):
+    """Профиль изменяется, смена пароля отзывает прежние токены."""
     student = headers['student']
     response = client.patch(BASE+'/users/me',json={'fullName':'Новое Тестовое Имя','email':'NEW@example.org'},headers=student)
     assert response.status_code == 200
@@ -75,6 +82,7 @@ def test_profile_and_password(client, headers):
 
 @pytest.mark.parametrize('actor,status', [('admin',201),('teacher',201),('student',403)])
 def test_create_student(client, headers, actor, status):
+    """Создание студента разрешено только сотрудникам."""
     response=client.post(BASE+'/users',json=student_data(),headers=headers[actor])
     assert response.status_code==status
     if status==201:
@@ -83,6 +91,7 @@ def test_create_student(client, headers, actor, status):
 
 
 def test_create_teacher_and_duplicate(client, headers):
+    """Преподавателя создаёт администратор; повторный логин отклоняется."""
     data={'username':'new_teacher','password':'TeacherPass2026!', 'fullName':'Преподаватель Тестовый Новый', 'email':'new_teacher@example.org','role':'teacher'}
     assert client.post(BASE+'/users',json=data,headers=headers['teacher']).status_code==403
     assert client.post(BASE+'/users',json=data,headers=headers['admin']).status_code==201
@@ -92,11 +101,13 @@ def test_create_teacher_and_duplicate(client, headers):
 @pytest.mark.parametrize('changes', [{'course':0},{'course':7},{'email':'not-mail'},{'password':'123'},
     {'birthDate':'2999-01-01'},{'institution':''},{'role':'admin'},{'birthDate':None},{'username':'bad name'}])
 def test_user_validation(client, headers, changes):
+    """Ошибочные поля учётной записи возвращают 422."""
     data=student_data(); data.update(changes)
     assert client.post(BASE+'/users',json=data,headers=headers['teacher']).status_code==422
 
 
 def test_admin_accounts(client, accounts, headers):
+    """Администратор управляет аккаунтами и не блокирует сам себя."""
     assert client.get(BASE+'/users',headers=headers['admin']).status_code==200
     assert client.get(BASE+'/users',headers=headers['teacher']).status_code==403
     student_id=accounts['student'].id
@@ -110,4 +121,5 @@ def test_admin_accounts(client, accounts, headers):
 
 
 def test_duplicate_profile_email(client, accounts, headers):
+    """Чужую электронную почту нельзя присвоить своему профилю."""
     assert client.patch(BASE+'/users/me',json={'email':accounts['admin'].email},headers=headers['student']).status_code==409

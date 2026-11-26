@@ -3,6 +3,7 @@ import pytest
 
 @pytest.mark.parametrize('version', ['v1', 'v2'])
 def test_documentation_and_security_schema(client, version):
+    """Swagger, ReDoc и описание OAuth2 доступны для каждой версии."""
     response=client.get(f'/api/{version}/openapi.json')
     assert response.status_code==200
     schema=response.json()
@@ -17,12 +18,14 @@ def test_documentation_and_security_schema(client, version):
 
 
 def test_health_and_static(client):
+    """Проверка БД и локальные ресурсы документации доступны."""
     assert client.get('/health').json()=={'status':'ok','database':'postgresql'}
     assert client.get('/static/swagger-ui.css').status_code==200
 
 
 @pytest.mark.parametrize('version', ['v1', 'v2'])
 def test_complete_response_contracts(client, version):
+    """OpenAPI описывает поля JSON и бинарные ответы."""
     schema = client.get(f'/api/{version}/openapi.json').json()
     for operations in schema['paths'].values():
         for operation in operations.values():

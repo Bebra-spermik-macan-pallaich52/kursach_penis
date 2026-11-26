@@ -3,7 +3,7 @@ from io import BytesIO
 from docx import Document
 from openpyxl import Workbook
 import pytest
-from app.api.attachments import get_attachment
+from app.models.attachment import Attachment
 
 BASE='/api/v1'
 
@@ -14,6 +14,7 @@ def upload(client,headers,olympiad,kind='regulation',filename='rules.txt',conten
 
 
 def test_upload_download_replace_delete(client,headers,olympiad):
+    """Вложение можно загрузить, скачать, заменить и удалить."""
     response=upload(client,headers,olympiad); assert response.status_code==201
     fid=response.json()['id']; url=BASE+f'/attachments/{fid}'
     response=client.get(url); assert response.content==b'Test document'
@@ -29,6 +30,7 @@ def test_upload_download_replace_delete(client,headers,olympiad):
 
 
 def test_past_tasks(client,db,headers,olympiad):
+    """Гость видит задания только прошлых лет."""
     response=upload(client,headers,olympiad,kind='task'); assert response.status_code==201
     fid=response.json()['id']
     assert client.get(BASE+f'/attachments/{fid}').status_code==404
@@ -41,6 +43,7 @@ def test_past_tasks(client,db,headers,olympiad):
 
 @pytest.mark.parametrize('kind', ['regulation','certificate','award','task'])
 def test_templates(client,headers,olympiad,kind):
+    """Шаблоны документов создаются в настоящем формате Word."""
     response=client.post(BASE+f'/olympiads/{olympiad.id}/templates',headers=headers['teacher'],
         data={'kind':kind,'title':'Учебный образец','text':'Текст положения или бланка'})
     assert response.status_code==201
@@ -50,6 +53,7 @@ def test_templates(client,headers,olympiad,kind):
 
 
 def test_multiple_awards_and_permissions(client,headers,olympiad):
+    """Несколько грамот допускаются; чужой преподаватель их не изменяет."""
     r1=upload(client,headers,olympiad,kind='award'); r2=upload(client,headers,olympiad,kind='award')
     assert r1.status_code==r2.status_code==201
     assert len(client.get(BASE+f'/olympiads/{olympiad.id}/attachments').json())==2
@@ -70,11 +74,13 @@ def test_multiple_awards_and_permissions(client,headers,olympiad):
     ('a'*201+'.txt',b'Test','award',422),('large.txt',b'a'*(5*1024*1024+1),'award',413)],
     ids=['extension','empty','fake-pdf','fake-png','fake-jpg','fake-docx','encoding','kind','filename','size'])
 def test_file_validation(client,headers,olympiad,name,content,kind,status):
+    """Размер, расширение, содержимое и вид вложения проверяются."""
     assert upload(client,headers,olympiad,kind,name,content).status_code==status
 
 
 @pytest.mark.parametrize('format',['docx','xlsx'])
 def test_office_uploads(client,headers,olympiad,format):
+    """Корректные DOCX и XLSX принимаются как вложения."""
     stream=BytesIO()
     if format=='docx': Document().save(stream)
     else: Workbook().save(stream)
@@ -82,16 +88,18 @@ def test_office_uploads(client,headers,olympiad,format):
 
 
 def test_missing_file(client,db,headers,olympiad,tmp_path):
+    """Отсутствующий физический файл возвращает 404."""
     response=upload(client,headers,olympiad); fid=response.json()['id']
-    item=get_attachment(db,fid); (tmp_path/item.stored_name).unlink()
+    item=Attachment(**db.execute("SELECT * FROM attachments WHERE id = %s", (fid,)).fetchone()); (tmp_path/item.stored_name).unlink()
     assert client.get(BASE+f'/attachments/{fid}').status_code==404
     assert client.delete(BASE+'/attachments/99999999',headers=headers['teacher']).status_code==404
 
 
 def test_no_path_traversal(client,db,headers,olympiad,tmp_path):
+    """Имя загружаемого файла не позволяет выйти за пределы хранилища."""
     response=upload(client,headers,olympiad,filename='../../escape.txt')
     assert response.status_code==201
-    item=get_attachment(db,response.json()['id'])
+    item=Attachment(**db.execute("SELECT * FROM attachments WHERE id = %s", (response.json()['id'],)).fetchone())
     assert item.original_name=='escape.txt'
     assert '/' not in item.stored_name
     assert (tmp_path/item.stored_name).is_file()

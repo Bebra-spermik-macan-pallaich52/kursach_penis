@@ -20,6 +20,7 @@ def score(client, headers, pid):
 
 
 def test_complete_workflow(client, db, headers, accounts, olympiad):
+    """Заявка проходит до опубликованного протокола и отчётов."""
     oid=olympiad.id; url=BASE+f'/olympiads/{oid}/protocol'
     pid=enroll(client,headers,olympiad)
     assert client.post(BASE+f'/olympiads/{oid}/participations',headers=headers['student']).status_code==409
@@ -59,6 +60,7 @@ def test_complete_workflow(client, db, headers, accounts, olympiad):
 
 
 def test_ownership(client, headers, olympiad):
+    """Преподаватель не получает доступ к чужой олимпиаде."""
     pid=enroll(client,headers,olympiad); oid=olympiad.id
     other=headers['other_teacher']
     assert client.get(BASE+f'/olympiads/{oid}/participations',headers=other).status_code==403
@@ -75,6 +77,7 @@ def test_ownership(client, headers, olympiad):
 
 
 def test_enrollment_and_deletion(client,db,headers,olympiad):
+    """Заявка создаётся и удаляется только при допустимых условиях."""
     oid=olympiad.id
     assert client.post(BASE+f'/olympiads/{oid}/participations',headers=headers['teacher']).status_code==403
     pid=enroll(client,headers,olympiad)
@@ -89,6 +92,7 @@ def test_enrollment_and_deletion(client,db,headers,olympiad):
 
 
 def test_protocol_incomplete_future_and_validation(client,db,headers,olympiad):
+    """Неполный или преждевременный протокол нельзя подготовить."""
     url=BASE+f'/olympiads/{olympiad.id}/protocol'
     assert client.patch(url,json={'status':'prepared'},headers=headers['teacher']).status_code==409
     pid=enroll(client,headers,olympiad)
@@ -105,12 +109,14 @@ def test_protocol_incomplete_future_and_validation(client,db,headers,olympiad):
     ('get','/olympiads/9999999/protocol',None), ('delete','/participations/9999999',None),
     ('put','/participations/9999999/result',{'score':10,'result':'winner'})])
 def test_not_found(client,headers,method,path,data):
+    """Запрос отсутствующей записи даёт 404."""
     kwargs={'headers':headers['teacher']}
     if data: kwargs['json']=data
     assert getattr(client,method)(BASE+path,**kwargs).status_code==404
 
 
 def test_excel_formula_safety(client,db,headers,accounts,olympiad):
+    """Текст участника не исполняется как формула Excel."""
     db.execute("UPDATE users SET full_name = %s WHERE id = %s", ('=HYPERLINK("bad")', accounts["student"].id))
     pid=enroll(client,headers,olympiad); score(client,headers,pid)
     response=client.get(BASE+f'/olympiads/{olympiad.id}/reports/protocol?format=xlsx',headers=headers['teacher'])
@@ -120,12 +126,14 @@ def test_excel_formula_safety(client,db,headers,accounts,olympiad):
 
 
 def test_draft_export(client,headers,olympiad):
+    """В черновом отчёте отсутствующие баллы обозначены явно."""
     enroll(client,headers,olympiad)
     response=client.get(BASE+f'/olympiads/{olympiad.id}/reports/protocol',headers=headers['teacher'])
     assert Document(BytesIO(response.content)).tables[0].rows[1].cells[2].text=='—'
 
 
 def test_v2_security_and_write(client,headers,accounts):
+    """Во второй версии действуют те же права и операции записи."""
     from tests.test_olympiads import payload
     response=client.post('/api/v2/olympiads',json=payload(accounts['teacher'].id),headers=headers['admin'])
     assert response.status_code==201

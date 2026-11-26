@@ -1,40 +1,104 @@
+from app.errors import log_error
+from app.database import fetch_one
 from fastapi import HTTPException
 from app.models.olympiad import Olympiad
 from app.models.user import User
 
 
-def save(db):
-    db.commit()
+async def save(db):
+    try:
+        await db.commit()
+    except Exception as error:
+        log_error(error, "save")
+        raise
 
 
-def get_user(db, user_id):
-    row = db.execute("SELECT * FROM users WHERE id = %s", (user_id,)).fetchone()
-    if not row:
-        raise HTTPException(404, "Пользователь не найден")
-    return User(**row)
+async def get_user(db, user_id):
+    try:
+        row = await fetch_one(db, "SELECT * FROM users WHERE id = %s", (user_id,))
+        if not row:
+            raise HTTPException(404, "Пользователь не найден")
+        return User(**row)
+    except Exception as error:
+        log_error(error, "get_user")
+        raise
 
 
-def get_olympiad(db, olympiad_id, lock=False):
-    query = "SELECT * FROM olympiads WHERE id = %s"
-    if lock:
-        query += " FOR UPDATE"
-    row = db.execute(query, (olympiad_id,)).fetchone()
-    if not row:
-        raise HTTPException(404, "Олимпиада не найдена")
-    return Olympiad(**row)
+async def get_olympiad(db, olympiad_id, lock=False):
+    try:
+        query = "SELECT * FROM olympiads WHERE id = %s"
+        if lock:
+            query += " FOR UPDATE"
+        row = await fetch_one(db, query, (olympiad_id,))
+        if not row:
+            raise HTTPException(404, "Олимпиада не найдена")
+        return Olympiad(**row)
+    except Exception as error:
+        log_error(error, "get_olympiad")
+        raise
 
 
 def check_owner(olympiad, user):
-    if user.role != "admin" and olympiad.teacher_id != user.id:
-        raise HTTPException(403, "Это олимпиада другого преподавателя")
+    try:
+        if user.role != "admin" and olympiad.teacher_id != user.id:
+            raise HTTPException(403, "Это олимпиада другого преподавателя")
+    except Exception as error:
+        log_error(error, "check_owner")
+        raise
 
 
 def check_draft(olympiad):
-    if olympiad.protocol_status != "draft":
-        raise HTTPException(409, "Изменения доступны только при статусе draft")
+    try:
+        if olympiad.protocol_status != "draft":
+            raise HTTPException(409, "Изменения доступны только при статусе draft")
+    except Exception as error:
+        log_error(error, "check_draft")
+        raise
 
 
-def check_teacher(db, teacher_id):
-    row = db.execute("SELECT role, is_active FROM users WHERE id = %s", (teacher_id,)).fetchone()
-    if not row or row["role"] != "teacher" or not row["is_active"]:
-        raise HTTPException(422, "Ответственным должен быть действующий преподаватель")
+async def check_teacher(db, teacher_id):
+    try:
+        row = await fetch_one(db, "SELECT role, is_active FROM users WHERE id = %s", (teacher_id,))
+        if not row or row["role"] != "teacher" or (not row["is_active"]):
+            raise HTTPException(422, "Ответственным должен быть действующий преподаватель")
+    except Exception as error:
+        log_error(error, "check_teacher")
+        raise
+
+
+def user_data(user):
+    try:
+        return {
+            name: getattr(user, name)
+            for name in (
+                "id",
+                "username",
+                "full_name",
+                "email",
+                "role",
+                "birth_date",
+                "institution",
+                "education_level",
+                "course",
+                "specialty",
+                "is_active",
+            )
+        }
+    except Exception as error:
+        log_error(error, "user_data")
+        raise
+
+
+def participation_data(part, student):
+    try:
+        return {
+            "id": part.id,
+            "olympiad_id": part.olympiad_id,
+            "student_id": part.student_id,
+            "full_name": student.full_name,
+            "score": part.score,
+            "result": part.result,
+        }
+    except Exception as error:
+        log_error(error, "participation_data")
+        raise

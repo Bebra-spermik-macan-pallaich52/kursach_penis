@@ -1,12 +1,9 @@
+from app.errors import log_error
+import asyncio
+from app.errors import register_handlers
 from contextlib import asynccontextmanager
-import json
 from fastapi import APIRouter, FastAPI
-from fastapi.encoders import jsonable_encoder
-from fastapi.exceptions import RequestValidationError
 from fastapi.openapi.docs import get_redoc_html, get_swagger_ui_html
-from fastapi.responses import Response, JSONResponse
-from psycopg import IntegrityError, DataError
-from psycopg.errors import CheckViolation
 from fastapi.staticfiles import StaticFiles
 from app.config import JWT_SECRET, ROOT, STORAGE
 from app.database import connect
@@ -26,79 +23,102 @@ DESCRIPTION = """Учёт участия студентов в олимпиад�
 
 @asynccontextmanager
 async def lifespan(app):
-    if len(JWT_SECRET) < 32 or JWT_SECRET == "GENERATE_WITH_CONFIGURE_SCRIPT":
-        raise RuntimeError("Создайте случайный JWT_SECRET: python scripts/configure.py")
-    STORAGE.mkdir(parents=True, exist_ok=True)
-    with connect() as conn:
-        conn.execute("SELECT 1")
-    yield
+    try:
+        if len(JWT_SECRET) < 32 or JWT_SECRET == "GENERATE_WITH_CONFIGURE_SCRIPT":
+            raise RuntimeError("Создайте случайный JWT_SECRET: python scripts/configure.py")
+        await asyncio.to_thread(STORAGE.mkdir, parents=True, exist_ok=True)
+        async with await connect() as conn:
+            await conn.execute("SELECT 1")
+        yield
+    except Exception as error:
+        log_error(error, "lifespan")
+        raise
 
 
 def create_api(version):
-    api = FastAPI(title="Олимпиадное движение — " + version, version=version,
-                  description=DESCRIPTION, docs_url=None, redoc_url=None,
-                  responses={code: {"model": ErrorRead, "description": description}
-                      for code, description in {
-                          400: "Неверный текущий пароль",
-                          401: "Требуется вход", 403: "Недостаточно прав",
-                          404: "Не найдено", 409: "Конфликт данных или состояния",
-                          413: "Файл слишком большой", 422: "Ошибка входных данных"
-                      }.items()})
+    try:
+        api = FastAPI(
+            title="Олимпиадное движение — " + version,
+            version=version,
+            description=DESCRIPTION,
+            docs_url=None,
+            redoc_url=None,
+            responses={
+                code: {"model": ErrorRead, "description": description}
+                for code, description in {
+                    400: "Неверный текущий пароль",
+                    401: "Требуется вход",
+                    403: "Недостаточно прав",
+                    404: "Не найдено",
+                    409: "Конфликт данных или состояния",
+                    413: "Файл слишком большой",
+                    422: "Ошибка входных данных",
+                }.items()
+            },
+        )
+        register_handlers(api)
+        api.include_router(auth.router)
+        api.include_router(users.router)
+        if version == "v2":
+            api.include_router(olympiads.v2_router)
+            common_router = APIRouter()
+            for route in olympiads.router.routes:
+                if route.path != "/olympiads" or "GET" not in route.methods:
+                    common_router.routes.append(route)
+            api.include_router(common_router)
+        else:
+            api.include_router(olympiads.router)
+        for router in (participations.router, protocols.router, attachments.router):
+            api.include_router(router)
 
-    @api.exception_handler(RequestValidationError)
-    async def validation_error(request, error):
+        @api.get("/docs", include_in_schema=False)
+        async def swagger():
+            try:
+                return get_swagger_ui_html(
+                    openapi_url=f"/api/{version}/openapi.json",
+                    title=f"Документация {version}",
+                    swagger_js_url="/static/swagger-ui-bundle.js",
+                    swagger_css_url="/static/swagger-ui.css",
+                    swagger_favicon_url="data:,",
+                )
+            except Exception as error:
+                log_error(error, "swagger")
+                raise
 
-        errors = [{"loc": item["loc"], "msg": item["msg"], "type": item["type"]} for item in error.errors()]
-        body = json.dumps(jsonable_encoder({"detail": errors}), ensure_ascii=True)
-        return Response(body, status_code=422, media_type="application/json")
+        @api.get("/redoc", include_in_schema=False)
+        async def redoc():
+            try:
+                return get_redoc_html(
+                    openapi_url=f"/api/{version}/openapi.json",
+                    title=f"ReDoc {version}",
+                    redoc_js_url="/static/redoc.standalone.js",
+                    redoc_favicon_url="data:,",
+                    with_google_fonts=False,
+                )
+            except Exception as error:
+                log_error(error, "redoc")
+                raise
 
-    @api.exception_handler(IntegrityError)
-    async def integrity_error(request, error):
-        code = 422 if isinstance(error, CheckViolation) else 409
-        return JSONResponse({"detail": "Данные нарушают ограничения базы"}, status_code=code)
-
-    @api.exception_handler(DataError)
-    async def data_error(request, error):
-        return JSONResponse({"detail": "Проверьте формат и длину данных"}, status_code=422)
-
-    api.include_router(auth.router)
-    api.include_router(users.router)
-    if version == "v2":
-        api.include_router(olympiads.v2_router)
-
-        common_router = APIRouter()
-        for route in olympiads.router.routes:
-            if route.path != "/olympiads" or "GET" not in route.methods:
-                common_router.routes.append(route)
-        api.include_router(common_router)
-    else:
-        api.include_router(olympiads.router)
-    for router in (participations.router, protocols.router, attachments.router):
-        api.include_router(router)
-
-    @api.get("/docs", include_in_schema=False)
-    def swagger():
-        return get_swagger_ui_html(openapi_url=f"/api/{version}/openapi.json",
-            title=f"Документация {version}", swagger_js_url="/static/swagger-ui-bundle.js",
-            swagger_css_url="/static/swagger-ui.css", swagger_favicon_url="data:,")
-
-    @api.get("/redoc", include_in_schema=False)
-    def redoc():
-        return get_redoc_html(openapi_url=f"/api/{version}/openapi.json",
-            title=f"ReDoc {version}", redoc_js_url="/static/redoc.standalone.js",
-            redoc_favicon_url="data:,", with_google_fonts=False)
-    return api
+        return api
+    except Exception as error:
+        log_error(error, "create_api")
+        raise
 
 
 app = FastAPI(title="REST-сервис олимпиад", version="1.0.0", lifespan=lifespan)
+register_handlers(app)
 app.mount("/static", StaticFiles(directory=ROOT / "app" / "static"), name="static")
 
 
 @app.get("/health", tags=["Состояние"], summary="Проверить подключение к БД")
-def health():
-    with connect() as connection:
-        connection.execute("SELECT 1")
-    return {"status": "ok", "database": "postgresql"}
+async def health():
+    try:
+        async with await connect() as connection:
+            await connection.execute("SELECT 1")
+        return {"status": "ok", "database": "postgresql"}
+    except Exception as error:
+        log_error(error, "health")
+        raise
 
 
 app.mount("/api/v1", create_api("v1"))

@@ -1,3 +1,4 @@
+from app.errors import log_error
 import re
 from typing import Annotated
 from pydantic import BaseModel, ConfigDict, StringConstraints, field_validator, ValidationInfo
@@ -7,20 +8,38 @@ Password = Annotated[str, StringConstraints(strip_whitespace=False)]
 
 
 def has_invalid_text(value):
-
-    return re.search(r"[\x00-\x08\x0b\x0c\x0e-\x1f\ud800-\udfff\ufffe\uffff]", value) is not None
+    try:
+        return (
+            re.search("[\\x00-\\x08\\x0b\\x0c\\x0e-\\x1f\\ud800-\\udfff\\ufffe\\uffff]", value)
+            is not None
+        )
+    except Exception as error:
+        log_error(error, "has_invalid_text")
+        raise
 
 
 class ApiModel(BaseModel):
-    model_config = ConfigDict(alias_generator=to_camel, populate_by_name=True,
-                              from_attributes=True, str_strip_whitespace=True,
-                              extra="forbid")
+    model_config = ConfigDict(
+        alias_generator=to_camel,
+        populate_by_name=True,
+        from_attributes=True,
+        str_strip_whitespace=True,
+        extra="forbid",
+    )
 
     @field_validator("*")
     @classmethod
     def check_text(cls, value, info: ValidationInfo):
-        if isinstance(value, str) and has_invalid_text(value):
-            raise ValueError("Текст содержит недопустимые управляющие символы")
-        if info.field_name in {"password", "old_password", "new_password"} and isinstance(value, str) and not value.strip():
-            raise ValueError("Пароль не может состоять из пробелов")
-        return value
+        try:
+            if isinstance(value, str) and has_invalid_text(value):
+                raise ValueError("Текст содержит недопустимые управляющие символы")
+            if (
+                info.field_name in {"password", "old_password", "new_password"}
+                and isinstance(value, str)
+                and (not value.strip())
+            ):
+                raise ValueError("Пароль не может состоять из пробелов")
+            return value
+        except Exception as error:
+            log_error(error, "check_text")
+            raise

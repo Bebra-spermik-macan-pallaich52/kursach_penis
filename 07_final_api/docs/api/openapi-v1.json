@@ -3585,6 +3585,44 @@
             ],
             "title": "Fullname"
           },
+          "lastName": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 70,
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Lastname"
+          },
+          "firstName": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 70,
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Firstname"
+          },
+          "middleName": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 70
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Middlename"
+          },
           "email": {
             "anyOf": [
               {
@@ -4201,6 +4239,44 @@
             ],
             "title": "Fullname"
           },
+          "lastName": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 70,
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Lastname"
+          },
+          "firstName": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 70,
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Firstname"
+          },
+          "middleName": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 70
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Middlename"
+          },
           "email": {
             "anyOf": [
               {
@@ -4419,10 +4495,55 @@
             "title": "Password"
           },
           "fullName": {
-            "type": "string",
-            "maxLength": 150,
-            "minLength": 5,
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 150,
+                "minLength": 5
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Fullname"
+          },
+          "lastName": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 70,
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Lastname"
+          },
+          "firstName": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 70,
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Firstname"
+          },
+          "middleName": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 70
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Middlename"
           },
           "email": {
             "type": "string",
@@ -4486,7 +4607,6 @@
         "required": [
           "username",
           "password",
-          "fullName",
           "email",
           "role"
         ],

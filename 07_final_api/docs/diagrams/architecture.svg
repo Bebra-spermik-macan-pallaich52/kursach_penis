@@ -87,7 +87,7 @@
 <polygon fill="none" stroke="black" points="145,-130 21,-130 21,-68 145,-68 145,-130"/>
 <text text-anchor="middle" x="83" y="-113.2" font-family="Times New Roman" font-size="16.00">records.py</text>
 <text text-anchor="middle" x="83" y="-95.2" font-family="Times New Roman" font-size="16.00">database.py</text>
-<text text-anchor="middle" x="83" y="-77.2" font-family="Times New Roman" font-size="16.00">SQL / psycopg</text>
+<text text-anchor="middle" x="83" y="-77.2" font-family="Times New Roman" font-size="16.00">async / psycopg</text>
 </g>
 <!-- schemas&#45;&gt;models -->
 <g id="edge6" class="edge">
